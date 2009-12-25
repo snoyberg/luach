@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Luach</title>
+  </head>
+  <body>
+    <noscript>
+      <p style="color:#f00">I'm sorry, this page requires Javascript to function.</p>
+    </noscript>
+    <p><a href="auth/openid/">Log in via openid</a></p>
+    <p><a href="event/">Events</a></p>
+    <form method="post" action="event/?_method_override=PUT">
+      <dl>
+        <dt>Title</dt>
+        <dd><input type="text" name="title"></dd>
+        <dt>Day</dt>
+        <dd><input type="text" name="day"></dd>
+        <dt>Gregorian?</dt>
+        <dd><input type="checkbox" name="remindGreg"></dd>
+        <dt>Hebrew?</dt>
+        <dd><input type="checkbox" name="remindHebrew"></dd>
+      </dl>
+      <input type="submit">
+    </form>
+  </body>
+</html>
