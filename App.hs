@@ -2,13 +2,15 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module App
     ( app
     ) where
 
 import Yesod
 import Yesod.Helpers.Auth
-import Model
+import Model hiding (uuid)
+import Occurrence
 import Data.Object.Yaml
 import Control.Applicative
 import Data.Attempt
@@ -17,8 +19,8 @@ import Data.Object.String
 import Data.Typeable (Typeable)
 import Control.Exception (Exception)
 import Network.AWS.SimpleDB
-import Data.Maybe (fromJust)
 import qualified Data.UUID as UUID
+import Data.Time
 
 data Luach = Luach AWSConnection String
 
@@ -49,23 +51,15 @@ instance Yesod Luach where
     Get: getEventH
     Put: updateEventH
     Delete: deleteEventH
+/feed:
+    Get: getFeedH
 |]
 instance YesodAuth Luach
 
+homepage :: Handler Luach StaticFile
 homepage = return $ StaticFile TypeHtml "templates/index.html"
 
-instance ConvertSuccess Event HtmlObject where
-    convertSuccess e = cs
-        [ ("title", title e)
-        , ("day", cs $ day e)
-        , ("remindGreg", cs $ remindGreg e)
-        , ("remindHebrew", cs $ remindHebrew e)
-        , ("uuid", UUID.toString $ fromJust $ uuid e)
-        ]
-instance HasReps Event where
-    reps = error "reps Event"
-    chooseRep = chooseRep . toHtmlObject
-
+getEventsH :: Handler Luach HtmlObject
 getEventsH = do
     (Luach conn dn) <- getYesod
     i <- identifier
@@ -74,6 +68,7 @@ getEventsH = do
             helper :: [Event] -> HtmlObject
             helper = Sequence . map cs
 
+putEventHelper :: Maybe UUID.UUID -> Handler Luach ()
 putEventHelper uuid = do
     o <- identifier
     t <- postParam "title"
@@ -85,13 +80,16 @@ putEventHelper uuid = do
     liftIO $ putEvent conn dn e
     return ()
 
+putEventH :: Handler Luach ()
 putEventH = do
     putEventHelper Nothing
 
+updateEventH :: String -> Handler Luach ()
 updateEventH uuid = do
     uuid' <- try $ UUID.fromString uuid
     putEventHelper $ Just uuid'
 
+deleteEventH :: String -> Handler Luach ()
 deleteEventH uuid = do
     Luach conn dn <- getYesod
     e' <- liftIO $ getEvent conn dn uuid
@@ -102,6 +100,7 @@ deleteEventH uuid = do
     unless (i == owner e) permissionDenied
     liftIO $ deleteEvent conn dn e
 
+getEventH :: String -> Handler Luach Event
 getEventH uuid = do
     Luach conn dn <- getYesod
     e' <- liftIO $ getEvent conn dn uuid
@@ -111,6 +110,17 @@ getEventH uuid = do
     i <- identifier
     unless (i == owner e) permissionDenied
     return e
+
+getFeedH :: Handler Luach Occurrences
+getFeedH = do
+    i <- identifier
+    Luach conn dn <- getYesod
+    es <- liftIO $ getEvents conn dn i
+    today <- liftIO $ utctDay <$> getCurrentTime
+    let maxDay = addDays 7 today
+    os <- liftIO $ getOccurrencesIO es
+    let os' = filter (\(d, _) -> d <= maxDay) os
+    return os'
 
 readLuach :: IO Luach
 readLuach = readYamlDoc "settings.yaml" >>= convertAttemptWrap
