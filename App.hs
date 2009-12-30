@@ -9,6 +9,7 @@ module App
 
 import Yesod
 import Yesod.Helpers.Auth
+import Yesod.Helpers.Static
 import Model hiding (uuid)
 import Occurrence
 import Data.Object.Yaml
@@ -53,7 +54,10 @@ instance Yesod Luach where
     Delete: deleteEventH
 /feed:
     Get: getFeedH
+/static/*filepath: serveStatic'
 |]
+instance YesodApproot Luach where
+    approot _ = Approot "http://localhost:3000/" -- FIXME
 instance YesodAuth Luach
 
 homepage :: Handler Luach StaticFile
@@ -62,7 +66,7 @@ homepage = return $ StaticFile TypeHtml "templates/index.html"
 getEventsH :: Handler Luach HtmlObject
 getEventsH = do
     (Luach conn dn) <- getYesod
-    i <- identifier
+    i <- authIdentifier
     liftIO $ helper <$> getEvents conn dn i
         where
             helper :: [Event] -> HtmlObject
@@ -70,7 +74,7 @@ getEventsH = do
 
 putEventHelper :: Maybe UUID.UUID -> Handler Luach ()
 putEventHelper uuid = do
-    o <- identifier
+    o <- authIdentifier
     t <- postParam "title"
     d <- postParam "day"
     g <- postParam "remindGreg"
@@ -96,7 +100,7 @@ deleteEventH uuid = do
     e <- case e' of
             Nothing -> notFound
             Just x -> return x
-    i <- identifier
+    i <- authIdentifier
     unless (i == owner e) permissionDenied
     liftIO $ deleteEvent conn dn e
 
@@ -107,13 +111,13 @@ getEventH uuid = do
     e <- case e' of
             Nothing -> notFound
             Just x -> return x
-    i <- identifier
+    i <- authIdentifier
     unless (i == owner e) permissionDenied
     return e
 
 getFeedH :: Handler Luach Occurrences
 getFeedH = do
-    i <- identifier
+    i <- authIdentifier
     Luach conn dn <- getYesod
     es <- liftIO $ getEvents conn dn i
     today <- liftIO $ utctDay <$> getCurrentTime
@@ -121,6 +125,9 @@ getFeedH = do
     os <- liftIO $ getOccurrencesIO es
     let os' = filter (\(d, _) -> d <= maxDay) os
     return os'
+
+serveStatic' :: Verb -> [String] -> Handler y [(ContentType, Content)]
+serveStatic' = serveStatic $ fileLookupDir "static"
 
 readLuach :: IO Luach
 readLuach = readYamlDoc "settings.yaml" >>= convertAttemptWrap

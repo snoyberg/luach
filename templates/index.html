@@ -2,13 +2,24 @@
 <html>
   <head>
     <title>Luach</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script src="static/script.js"></script>
   </head>
   <body>
     <noscript>
       <p style="color:#f00">I'm sorry, this page requires Javascript to function.</p>
     </noscript>
-    <p><a href="auth/openid/">Log in via openid</a></p>
-    <p><a href="event/">Events</a></p>
+    <div id="login">
+      <form method="get" action="auth/openid/forward/">
+        <label for="openid">OpenID: </label>
+        <input type="text" id="openid" name="openid">
+        <input type="submit" value="Login">
+      </form>
+    </div>
+    <div id="interface">
+      <p>Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
+      <div id="events">
+      </div>
     <form method="post" action="event/?_method_override=PUT">
       <dl>
         <dt>Title</dt>
@@ -22,5 +33,6 @@
       </dl>
       <input type="submit">
     </form>
+    </div>
   </body>
 </html>
