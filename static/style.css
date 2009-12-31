@@ -1,0 +1,25 @@
+#interface {
+    display: table;
+}
+
+#logout {
+    display: table-row;
+}
+
+#events, #new-event {
+    display: table-cell;
+    padding-right: 10px;
+}
+
+#events {
+    font-size: 10pt;
+}
+
+td ul {
+    margin: 0;
+    padding: 0;
+}
+
+td li {
+    list-style: none;
+}

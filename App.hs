@@ -63,37 +63,41 @@ instance YesodAuth Luach
 homepage :: Handler Luach StaticFile
 homepage = return $ StaticFile TypeHtml "templates/index.html"
 
-getEventsH :: Handler Luach HtmlObject
-getEventsH = do
+getEventsHelper :: String -> Handler Luach HtmlObject
+getEventsHelper i = do
     (Luach conn dn) <- getYesod
-    i <- authIdentifier
     liftIO $ helper <$> getEvents conn dn i
         where
             helper :: [Event] -> HtmlObject
             helper = Sequence . map cs
 
-putEventHelper :: Maybe UUID.UUID -> Handler Luach ()
+getEventsH :: Handler Luach HtmlObject
+getEventsH = authIdentifier >>= getEventsHelper
+
+putEventHelper :: Maybe UUID.UUID -> Handler Luach HtmlObject
 putEventHelper uuid = do
     o <- authIdentifier
     t <- postParam "title"
     d <- postParam "day"
     g <- postParam "remindGreg"
     h <- postParam "remindHebrew"
-    let e = Event t d g h uuid o
+    let r = (if g then [Gregorian] else []) ++
+            (if h then [Hebrew] else [])
+    s <- postParam "afterSunset"
+    let e = Event t d r s uuid o
     Luach conn dn <- getYesod
     liftIO $ putEvent conn dn e
-    return ()
+    getEventsHelper o
 
-putEventH :: Handler Luach ()
-putEventH = do
-    putEventHelper Nothing
+putEventH :: Handler Luach HtmlObject
+putEventH = putEventHelper Nothing
 
-updateEventH :: String -> Handler Luach ()
+updateEventH :: String -> Handler Luach HtmlObject
 updateEventH uuid = do
     uuid' <- try $ UUID.fromString uuid
     putEventHelper $ Just uuid'
 
-deleteEventH :: String -> Handler Luach ()
+deleteEventH :: String -> Handler Luach HtmlObject
 deleteEventH uuid = do
     Luach conn dn <- getYesod
     e' <- liftIO $ getEvent conn dn uuid
@@ -103,6 +107,8 @@ deleteEventH uuid = do
     i <- authIdentifier
     unless (i == owner e) permissionDenied
     liftIO $ deleteEvent conn dn e
+    Approot ar <- getApproot
+    getEventsHelper i
 
 getEventH :: String -> Handler Luach Event
 getEventH uuid = do

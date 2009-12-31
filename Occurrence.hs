@@ -67,11 +67,9 @@ hoist [] = error "Empty list to hoist"
 
 -- | next occurences
 nos :: Day -> HebrewDate -> Event -> [(Day, Occurrence)]
-nos gd hd e =
-    (if remindGreg e then [helperG] else []) ++
-    (if remindHebrew e then [helperH] else [])
-        where
-            helperG =
+nos gd hd e = map nos' $ reminders e where
+    nos' :: CalendarType -> (Day, Occurrence)
+    nos' Gregorian =
                 let (yOrig, m, da) = toGregorian $ day e
                     (y, m', da') = toGregorian gd
                     y' = if m' > m || (m' == m && da' > da)
@@ -81,7 +79,7 @@ nos gd hd e =
                     years' = y' - yOrig
                     o = Occurrence Gregorian (title e) (showUUID e) years'
                  in (gd', o)
-            helperH =
+    nos' Hebrew =
                 let hd' = nextAnniversary hd $ toHebrew $ day e
                     years' = fromIntegral $ year hd' - year hd
                     o = Occurrence Hebrew (title e) (showUUID e) years'

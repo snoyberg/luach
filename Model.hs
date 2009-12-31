@@ -24,12 +24,14 @@ import Data.Typeable (Typeable)
 import Control.Exception (Exception)
 import Yesod
 import qualified Data.UUID as UUID
+import Data.Function.Predicate
+import Data.Maybe
 
 data Event = Event
     { title :: String
     , day :: Day
-    , remindGreg :: Bool
-    , remindHebrew :: Bool
+    , reminders :: [CalendarType]
+    , afterSunset :: Bool
     , uuid :: Maybe UUID
     , owner :: String
     }
@@ -37,18 +39,24 @@ data Event = Event
 
 instance ConvertSuccess Event HtmlObject where
     convertSuccess e = cs
-        [ ("title", title e)
-        , ("day", cs $ day e)
-        , ("remindGreg", cs $ remindGreg e)
-        , ("remindHebrew", cs $ remindHebrew e)
-        , ("uuid", maybe "" UUID.toString $ Model.uuid e)
+        [ ("title", toHtmlObject $ title e)
+        , ("day", cs $ (cs :: Day -> String) $ day e)
+        , ("reminders", cs $ reminders e)
+        , ("sunset", cs $ (cs :: Bool -> String) $ afterSunset e)
+        , ("uuid", cs $ maybe "" UUID.toString $ Model.uuid e)
         ]
 instance HasReps Event where
     reps = error "reps Event"
     chooseRep = chooseRep . toHtmlObject
 
 data CalendarType = Gregorian | Hebrew
-    deriving (Eq, Show)
+    deriving (Eq, Show, Read)
+instance ConvertAttempt String CalendarType where
+    convertAttempt = SF.read
+instance ConvertSuccess CalendarType String where
+    convertSuccess = show
+instance ConvertSuccess [CalendarType] HtmlObject where
+    convertSuccess = cs . map show
 
 instance ConvertSuccess Event (IO Item) where
     convertSuccess e = do
@@ -56,13 +64,14 @@ instance ConvertSuccess Event (IO Item) where
                     case uuid e of
                         Just u -> return u
                         Nothing -> randomIO
-        return $ Item name
+        return $ Item name $
             [ "day" := cs (day e)
             , "title" := title e
-            , "remindGreg" := cs (remindGreg e)
-            , "remindHebrew" := cs (remindHebrew e)
+            , "afterSunset" := cs (afterSunset e)
             , "owner" := owner e
-            ]
+            ] ++ map (\x -> "reminders" := cs x) (reminders e)
+            ++ if afterSunset e then ["afterSunset" := "true"]
+                                else []
 
 data InvalidUUID = InvalidUUID String
     deriving (Show, Typeable)
@@ -76,10 +85,12 @@ instance ConvertAttempt Item Event where
         let m = map (\(k := v) -> (k, v)) attrs
         d <- SF.lookup "day" m >>= ca
         t <- SF.lookup "title" m
-        g <- SF.lookup "remindGreg" m >>= ca
-        h <- SF.lookup "remindHebrew" m >>= ca
+        r <- mapM (ca . snd) $ filter (fst `equals` "reminders") m
+        let s = fromMaybe False $ do
+                    "true" <- lookup "afterSunset" m
+                    return True
         o <- SF.lookup "owner" m
-        return $ Event t d g h (Just u) o
+        return $ Event t d r s (Just u) o
 
 getEvents :: AWSConnection -> String -> String -> IO [Event]
 getEvents conn domain owner' = do

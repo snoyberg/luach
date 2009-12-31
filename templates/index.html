@@ -3,7 +3,10 @@
   <head>
     <title>Luach</title>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>
     <script src="static/script.js"></script>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.0/themes/start/jquery-ui.css">
+    <link rel="stylesheet" href="static/style.css">
   </head>
   <body>
     <noscript>
@@ -17,22 +20,27 @@
       </form>
     </div>
     <div id="interface">
-      <p>Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
+      <p id="logout">Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
       <div id="events">
       </div>
-    <form method="post" action="event/?_method_override=PUT">
-      <dl>
-        <dt>Title</dt>
-        <dd><input type="text" name="title"></dd>
-        <dt>Day</dt>
-        <dd><input type="text" name="day"></dd>
-        <dt>Gregorian?</dt>
-        <dd><input type="checkbox" name="remindGreg"></dd>
-        <dt>Hebrew?</dt>
-        <dd><input type="checkbox" name="remindHebrew"></dd>
-      </dl>
-      <input type="submit">
-    </form>
+      <form id="new-event" method="post" action="event/?_method_override=PUT">
+        <h2>Add new event</h2>
+        <dl>
+          <dt>Title</dt>
+          <dd><input type="text" name="title"></dd>
+          <dt>Day</dt>
+          <dd><input type="text" name="day"></dd>
+          <dt>Gregorian?</dt>
+          <dd><input type="checkbox" name="remindGreg"></dd>
+          <dt>Hebrew?</dt>
+          <dd><input type="checkbox" name="remindHebrew"></dd>
+          <dt>After sunset?</dt>
+          <dd><input type="checkbox" name="afterSunset"></dd>
+        </dl>
+        <input class='new-event-button' type="submit">
+      </form>
+      <div id="upcoming">
+      </div>
     </div>
   </body>
 </html>
