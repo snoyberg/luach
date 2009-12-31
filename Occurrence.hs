@@ -22,6 +22,7 @@ import Data.Object.Html
 import Data.Object
 import Control.Arrow
 import Yesod
+import System.Locale
 
 #if TEST
 import Test.Framework (testGroup, Test)
@@ -39,12 +40,18 @@ data Occurrence = Occurrence
 
 type Occurrences = [(Day, [Occurrence])]
 
+prettyDate :: Day -> String
+prettyDate = formatTime defaultTimeLocale "%A %B %e, %Y"
+
 instance ConvertSuccess Occurrences HtmlObject where
     convertSuccess = Mapping . map helper where
-        helper = cs *** Sequence . map cs
+        helper = prettyDate *** Sequence . map cs
 instance ConvertSuccess Occurrence HtmlObject where
-    convertSuccess o = cs $ otitle o ++ " (" ++ show (years o) ++ ", " ++
-                            show (calendarType o) ++ ")"
+    convertSuccess o = cs
+        [ ("title", otitle o)
+        , ("years", show $ years o)
+        , ("calendar", show $ calendarType o)
+        ]
 instance HasReps Occurrences where
     reps = error "reps Occurrences"
     chooseRep = chooseRep . toHtmlObject
@@ -80,8 +87,9 @@ nos gd hd e = map nos' $ reminders e where
                     o = Occurrence Gregorian (title e) (showUUID e) years'
                  in (gd', o)
     nos' Hebrew =
-                let hd' = nextAnniversary hd $ toHebrew $ day e
-                    years' = fromIntegral $ year hd' - year hd
+                let orig = toHebrew $ day e
+                    hd' = nextAnniversary hd orig
+                    years' = fromIntegral $ year hd' - year orig
                     o = Occurrence Hebrew (title e) (showUUID e) years'
                  in (fromHebrew hd', o)
 

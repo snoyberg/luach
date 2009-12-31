@@ -68,8 +68,8 @@ function showFeed(o) {
   var html = [];
   $.each(o, function(k, v){
     html.push("<h3>" + k + "</h3><ul>");
-    $.each(v, function(i, t){
-      html.push("<li>" + t + "</li>");
+    $.each(v, function(i, e){
+      html.push("<li>" + e.title + " &mdash; " + e.years + " years on the " + e.calendar + " calendar</li>");
     });
     html.push("</ul>");
   });
