@@ -77,13 +77,13 @@ getEventsH = authIdentifier >>= getEventsHelper
 putEventHelper :: Maybe UUID.UUID -> Handler Luach HtmlObject
 putEventHelper uuid = do
     o <- authIdentifier
-    t <- postParam "title"
-    d <- postParam "day"
-    g <- postParam "remindGreg"
-    h <- postParam "remindHebrew"
+    t <- runRequest $ postParam "title"
+    d <- runRequest $ postParam "day"
+    g <- runRequest $ postParam "remindGreg"
+    h <- runRequest $ postParam "remindHebrew"
     let r = (if g then [Gregorian] else []) ++
             (if h then [Hebrew] else [])
-    s <- postParam "afterSunset"
+    s <- runRequest $ postParam "afterSunset"
     let e = Event t d r s uuid o
     Luach conn dn <- getYesod
     liftIO $ putEvent conn dn e
