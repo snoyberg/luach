@@ -1,25 +1,124 @@
-#interface {
-    display: table;
+.tooltip {
+  display: none;
+  background-color: #ffa;
+  border: 1px solid #cc9;
+  padding: 3px;
+  font-size: 13px;
+  -moz-box-shadow: 2px 2px 11px #666;
+  -webkit-box-shadow: 2px 2px 11px #666;
+  width: 300px;
+}
+
+/* layout */
+body {
+  background-color: #99c;
+}
+
+#wrapper {
+  width: 760px;
+  margin: 0.5em auto;
+  background-color: #eee;
+  border: 1px solid #fff;
+  padding: 5px;
+}
+
+#login h1 {
+  text-align: center;
+  margin-top: 0;
+  color: #606;
 }
 
 #logout {
-    display: table-row;
+  margin-top: 0;
+  text-align: center;
+  font-size: 10pt;
+  background-color: #dcdced;
 }
 
-#events, #new-event {
-    display: table-cell;
-    padding-right: 10px;
+#information {
+  float: left;
+  width: 170px;
+  font-size: 10pt;
+  background-color: #cdcded;
+  padding: 0 3px;
+  border: 1px solid #999;
+}
+
+#information h2 {
+  font-size: 12pt;
+  color: #606;
+  text-align: center;
+}
+
+#upcoming {
+  float: right;
+  width: 170px;
+  font-size: 10pt;
+  background-color: #cdcded;
+  padding: 0 3px;
+  border: 1px solid #999;
+}
+
+#upcoming h2 {
+  font-size: 12pt;
+  color: #4c0066;
+  text-align: center;
+}
+
+#upcoming h3 {
+  font-size: 11pt;
+  text-align: center;
+  color: #330066;
+}
+
+#upcoming ul {
+  padding-left: 17px;
 }
 
 #events {
-    font-size: 10pt;
+  margin: 0 180px;
 }
 
-td ul {
-    margin: 0;
-    padding: 0;
+#events h2 {
+  text-align: center;
+  margin-top: 0;
 }
 
-td li {
-    list-style: none;
+#events table {
+  border-spacing: 0;
+  border: 1px solid #ccc;
+  margin: 0 5px;
+  width: 390px;
+}
+
+#events tr.even {
+  background-color: #eddce4;
+}
+
+#events tr.odd {
+  background-color: #dcede4;
+}
+
+#events tr.even:hover {
+  background-color: #ca98b0;
+}
+
+#events tr.odd:hover {
+  background-color: #98cab0;
+}
+
+#events .day {
+  font-size: 10pt;
+}
+
+.controls {
+  text-align: center;
+}
+
+#new-event {
+  display: none;
+}
+
+#footer {
+  clear: both;
 }

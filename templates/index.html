@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Luach</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script src="http://cdn.jquerytools.org/1.1.1/full/jquery.tools.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.0/themes/start/jquery-ui.css">
@@ -12,35 +12,73 @@
     <noscript>
       <p style="color:#f00">I'm sorry, this page requires Javascript to function.</p>
     </noscript>
-    <div id="login">
-      <form method="get" action="auth/openid/forward/">
-        <label for="openid">OpenID: </label>
-        <input type="text" id="openid" name="openid">
-        <input type="submit" value="Login">
-      </form>
-    </div>
-    <div id="interface">
-      <p id="logout">Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
-      <div id="events">
+    <div id="wrapper">
+      <div id="login">
+        <h1>Luach</h1>
+        <p>Welcome to Luach, your easy-to-use <b>reminder</b>. Tell us about your <b>birthdays</b> and <b>anniversaries</b>, and we'll give you a 7-day reminder of when they'll happen next.</p>
+        <p>We can give you reminders on both the <b>English</b> and <b>Hebrew</b> calendars. It's easy to get started: just log in!</p>
+        <form method="get" action="auth/openid/forward/">
+          <label for="openid">OpenID: </label>
+          <input type="text" id="openid" name="openid">
+          <input type="submit" value="Login">
+        </form>
       </div>
-      <form id="new-event" method="post" action="event/?_method_override=PUT">
-        <h2>Add new event</h2>
-        <dl>
-          <dt>Title</dt>
-          <dd><input type="text" name="title"></dd>
-          <dt>Day</dt>
-          <dd><input type="text" name="day"></dd>
-          <dt>Gregorian?</dt>
-          <dd><input type="checkbox" name="remindGreg"></dd>
-          <dt>Hebrew?</dt>
-          <dd><input type="checkbox" name="remindHebrew"></dd>
-          <dt>After sunset?</dt>
-          <dd><input type="checkbox" name="afterSunset"></dd>
-        </dl>
-        <input class='new-event-button' type="submit">
-      </form>
-      <div id="upcoming">
+      <div id="interface">
+        <p id="logout">Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
+        <div id="information">
+          <h2>Luach Anniversary Reminder</h2>
+          <p>This free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>.</p>
+          <p>Feed link goes here.</p>
+          <p>Subscribe link goes here.</p>
+          <p>Google Ads go here.</p>
+        </div>
+        <div id="upcoming">
+          <h2>Upcoming Events</h2>
+          <div><p>Loading...</p></div>
+        </div>
+        <div id="events">
+          <h2>Your Events</h2>
+          <p><a class="add-button" href="event/?_method_override=put">Add New Event</a></p>
+          <div></div>
+        </div>
+        <form id="new-event" method="post" action="event/?_method_override=PUT">
+          <h2>Add new event</h2>
+          <table>
+            <tr>
+              <td><label for="title">Title</label></td>
+              <td><input id="title" type="text" name="title"></td>
+            </tr>
+            <tr>
+              <td><label for="day">Day</label></td>
+              <td><input id="day" type="text" name="day"></td>
+            </tr>
+            <tr>
+              <td><label for="remindGreg">Remind me on English date:</label></td>
+              <td>
+                <input id="remindGreg" type="checkbox" name="remindGreg" checked>
+                <img class="more-info" src="static/question.png" alt="More information" title="Would you like to have a reminder for this event generated on the English anniversary. In other words, if your event happend May 5, you will be reminded every May 5.">
+              </td>
+            </tr>
+            <tr>
+              <td><label for="remindHebrew">Remind me on Hebrew date:</label></td>
+              <td>
+                <input id="remindHebrew" type="checkbox" name="remindHebrew" checked>
+                <img class="more-info" src="static/question.png" alt="More information" title="Would you like to have a reminder for this event generated on the Hebrew anniversary. In other words, if your event happend 5 Tishrei, you will be reminded every 5 Tishrei.">
+              </td>
+            </tr>
+            <tr>
+              <td><label for="afterSunset">It happened after sunset:</label></td>
+              <td>
+                <input id="afterSunset" type="checkbox" name="afterSunset">
+                <img class="more-info" src="static/question.png" alt="More information" title="Hebrew dates start at sunset. If you're not sure, no big deal; you might be off by a day.">
+              </td>
+            </tr>
+          </table>
+          <input class='new-event-button' type="submit">
+        </form>
       </div>
+      <div id="footer"></div>
     </div>
+    <div class="tooltip"></div>
   </body>
 </html>

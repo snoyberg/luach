@@ -1,6 +1,8 @@
 $(function(){
   $(".new-event-button").live("click", newEventButton);
   $(".delete-button").live("click", deleteButton);
+  $(".edit-button").live("click", editButton);
+  $(".add-button").live("click", addButton);
   $("input[name=day]").datepicker({
     changeMonth: true,
     changeYear: true,
@@ -16,6 +18,12 @@ $(function(){
       $("#interface").hide();
     }
   });
+
+  // extra information tooltips
+  $("img.more-info").tooltip({
+    tip: ".tooltip",
+    position: "right"
+  });
 });
 
 function showEvents(es) {
@@ -24,25 +32,25 @@ function showEvents(es) {
   if (! es.length) {
     h.push("<p>You have no events.</p>");
   } else {
-    h.push("<table><thead><tr><th>Title</th><th>Date</th><th>Sunset</th><th>Reminders</th></tr></thead><tbody>");
+    h.push("<table border='0'>");
     $.each(es, function(i, e){
-      h.push("<tr><td>");
+      h.push("<tr class='");
+      h.push(i % 2 ? "odd" : "even");
+      h.push("'>");
+      h.push("<td>");
       h.push(e.title);
-      h.push("</td><td>");
+      h.push("</td><td width='80px' class='day'>");
       h.push(e.day);
-      h.push("</td><td>");
-      h.push(e.sunset ? "After" : "Before");
-      h.push("</td><td><ul>");
-      $.each(e.reminders, function(i, r){
-        h.push("<li>" + r + "</li>");
-      });
-      h.push("</ul></td><td>");
-      h.push("<form method='post' action='event/" + e.uuid + "/?_method_override=delete'><input class='delete-button' type='submit' value='Delete'></form>");
-      h.push("</td></tr>");
+      h.push("</td>");
+      h.push("<td width='40px' class='controls'>");
+      h.push("<a class='edit-button' href='event/" + e.uuid + "/?_method_override=put'><img src='static/edit.png' alt='Edit' title='Edit this event'></a>");
+      h.push("<a class='delete-button' href='event/" + e.uuid + "/?_method_override=delete'><img src='static/delete.png' alt='Delete' title='Delete this event'></a>");
+      h.push("</td>");
+      h.push("</tr>");
     });
     h.push("</tbody></table>");
   }
-  $("#events").html(h.join(''));
+  $("#events div").html(h.join(''));
 }
 
 function newEventButton() {
@@ -59,7 +67,7 @@ function newEventButton() {
 function deleteButton() {
   var toDelete = confirm("Are you sure?");
   if (toDelete) {
-    $.post($(this).parent().attr("action"), {}, showEvents, "json");
+    $.post($(this).parent().attr("href"), {}, showEvents, "json");
   }
   return false;
 }
@@ -73,5 +81,15 @@ function showFeed(o) {
     });
     html.push("</ul>");
   });
-  $("#upcoming").html(html.join(''));
+  $("#upcoming > div").html(html.join(''));
+}
+
+function addButton() {
+  $("#new-event").show();
+  return false;
+}
+
+function editButton() {
+  alert("Not supported");
+  return false;
 }
