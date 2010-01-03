@@ -117,7 +117,10 @@ getEvent conn domain uuid' = do
     return $ convertAttemptWrap i
 
 putEvent :: AWSConnection -> String -> Event -> IO ()
-putEvent conn domain event = cs event >>= putAttributes conn domain
+putEvent conn domain event = do
+    i@(Item _ attrs) <- cs event
+    let keys = map (\(k := _) -> k) attrs
+    putAttributes' conn domain i keys
 
 data DeleteMissingEvent = DeleteMissingEvent Event
     deriving (Show, Typeable)

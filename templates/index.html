@@ -41,7 +41,9 @@
           <p><a class="add-button" href="event/?_method_override=put">Add New Event</a></p>
           <div></div>
         </div>
+        <a id="new-event-link" rel="#new-event"></a>
         <form id="new-event" method="post" action="event/?_method_override=PUT">
+          <div class="tooltip"></div>
           <h2>Add new event</h2>
           <table>
             <tr>
@@ -75,11 +77,11 @@
             </tr>
           </table>
           <input class='new-event-button' type="submit">
+          <button id="cancel-new-event">Cancel</button>
         </form>
       </div>
       <div id="footer"></div>
     </div>
-    <div class="tooltip"></div>
     <div id="subscribe">
       <h1>Get reminders by e-mail</h1>
       <form action="http://www.feedmyinbox.com/feeds/verify/" method="post" id="fmi" target="fmi" onsubmit="window.open('http://www.feedmyinbox.com/', 'fmi', 'scrollbars=yes,width=500,height=490');return true;">

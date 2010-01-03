@@ -40,8 +40,11 @@ data Occurrence = Occurrence
 type Occurrences = [(Day, [Occurrence])]
 
 instance ConvertSuccess Occurrences HtmlObject where
-    convertSuccess = Mapping . map helper where
-        helper = prettyDate *** Sequence . map cs
+    convertSuccess = Sequence . map helper where
+        helper (d, o) = toHtmlObject
+            [ ("day", toHtmlObject $ prettyDate d)
+            , ("o", Sequence $ map cs o)
+            ]
 instance ConvertSuccess Occurrence HtmlObject where
     convertSuccess o = cs
         [ ("title", otitle o)
@@ -91,7 +94,8 @@ nos gd hd e = map nos' $ reminders e where
                     o = Occurrence Gregorian (title e) (showUUID e) years'
                  in (gd', o)
     nos' Hebrew =
-                let orig = toHebrew $ day e
+                let day' = addDays (if afterSunset e then 1 else 0) $ day e
+                    orig = toHebrew day'
                     hd' = nextAnniversary hd orig
                     years' = fromIntegral $ year hd' - year orig
                     o = Occurrence Hebrew (title e) (showUUID e) years'

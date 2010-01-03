@@ -1,5 +1,6 @@
 .tooltip {
   display: none;
+  position: relative;
   background-color: #ffa;
   border: 1px solid #cc9;
   padding: 3px;
@@ -148,3 +149,25 @@ body {
     height: 35px;
     cursor: pointer;
 }
+
+#new-event {
+  display: none;
+  background-color: #ffc;
+  border: 1px solid black;
+  padding: 10px;
+  width: 400px;
+  -moz-border-radius: 20px;
+  -webkit-border-radius: 20px;
+}
+
+#new-event .close {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    background: url(close.png);
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+}
+
+.ui-datepicker { z-index:9999; }
