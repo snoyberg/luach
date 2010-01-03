@@ -11,6 +11,7 @@ module Model
     , deleteEvent
     , getFeedId
     , checkFeedId
+    , prettyDate
     ) where
 
 import Data.Time.Calendar
@@ -29,6 +30,8 @@ import qualified Data.UUID as UUID
 import Data.Function.Predicate
 import Data.Maybe
 import Control.Monad (when)
+import Data.Time
+import System.Locale
 
 data Event = Event
     { title :: String
@@ -40,10 +43,17 @@ data Event = Event
     }
     deriving (Eq, Show)
 
+prettyDate' :: Day -> String
+prettyDate' = formatTime defaultTimeLocale "%b %e, %Y"
+
+prettyDate :: Day -> String
+prettyDate = formatTime defaultTimeLocale "%A %B %e, %Y"
+
 instance ConvertSuccess Event HtmlObject where
     convertSuccess e = cs
         [ ("title", toHtmlObject $ title e)
         , ("day", cs $ (cs :: Day -> String) $ day e)
+        , ("prettyday", cs $ prettyDate' $ day e)
         , ("reminders", cs $ reminders e)
         , ("sunset", cs $ (cs :: Bool -> String) $ afterSunset e)
         , ("uuid", cs $ maybe "" UUID.toString $ Model.uuid e)

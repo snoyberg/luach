@@ -41,7 +41,7 @@ function showEvents(es) {
       h.push("<td>");
       h.push(e.title);
       h.push("</td><td width='80px' class='day'>");
-      h.push(e.day);
+      h.push(e.prettyday);
       h.push("</td>");
       h.push("<td width='40px' class='controls'>");
       h.push("<a class='edit-button' href='event/" + e.uuid + "/?_method_override=put'><img src='static/edit.png' alt='Edit' title='Edit this event'></a>");
@@ -68,7 +68,7 @@ function newEventButton() {
 function deleteButton() {
   var toDelete = confirm("Are you sure?");
   if (toDelete) {
-    $.post($(this).parent().attr("href"), {}, showEvents, "json");
+    $.post($(this).attr("href"), {}, showEvents, "json");
   }
   return false;
 }

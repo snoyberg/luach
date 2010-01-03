@@ -5,7 +5,6 @@ module Occurrence
     ( Occurrence (..)
     , Occurrences
     , getOccurrencesIO
-    , prettyDate
 #if TEST
     , getOccurrences
     , testSuite
@@ -14,7 +13,6 @@ module Occurrence
 
 import Model
 import Control.Applicative
-import Data.Time
 import Data.Time.Calendar.Hebrew
 import Data.List
 import Data.Function
@@ -23,7 +21,7 @@ import Data.Object.Html
 import Data.Object.Text
 import Control.Arrow
 import Yesod
-import System.Locale
+import Data.Time
 
 #if TEST
 import Test.Framework (testGroup, Test)
@@ -40,9 +38,6 @@ data Occurrence = Occurrence
     deriving (Show, Eq)
 
 type Occurrences = [(Day, [Occurrence])]
-
-prettyDate :: Day -> String
-prettyDate = formatTime defaultTimeLocale "%A %B %e, %Y"
 
 instance ConvertSuccess Occurrences HtmlObject where
     convertSuccess = Mapping . map helper where

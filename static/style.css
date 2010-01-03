@@ -109,6 +109,8 @@ body {
 
 #events .day {
   font-size: 10pt;
+  text-align: right;
+  padding-right: 5px;
 }
 
 .controls {
