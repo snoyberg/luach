@@ -28,8 +28,8 @@
         <div id="information">
           <h2>Luach Anniversary Reminder</h2>
           <p>This free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>.</p>
-          <p>Feed link goes here.</p>
-          <p>Subscribe link goes here.</p>
+          <p id="feedlink"></p>
+          <p id="subscribelink"><a rel="#subscribe" href="#">Get e-mail reminders</a></p>
           <p>Google Ads go here.</p>
         </div>
         <div id="upcoming">
@@ -80,5 +80,14 @@
       <div id="footer"></div>
     </div>
     <div class="tooltip"></div>
+    <div id="subscribe">
+      <h1>Get reminders by e-mail</h1>
+      <form action="http://www.feedmyinbox.com/feeds/verify/" method="post" id="fmi" target="fmi" onsubmit="window.open('http://www.feedmyinbox.com/', 'fmi', 'scrollbars=yes,width=500,height=490');return true;">
+        <label for="email">Email Address:</label>
+        <input type="text" name="email" id="email">
+        <input id="feedurl" type="hidden" name="feed" value="">
+        <input id="subscribe-submit" type="submit" value="Submit">
+      </form>
+    </div>
   </body>
 </html>

@@ -14,6 +14,7 @@ $(function(){
       $("#login").hide();
       $("#ident").text(o.identifier);
       $.getJSON("event/", showEvents);
+      $.getJSON("settings/feedid/", setupFeedLinks);
     } else {
       $("#interface").hide();
     }
@@ -27,7 +28,7 @@ $(function(){
 });
 
 function showEvents(es) {
-  $.getJSON("feed/", showFeed);
+  $.getJSON("upcoming/", showFeed);
   var h = [];
   if (! es.length) {
     h.push("<p>You have no events.</p>");
@@ -92,4 +93,16 @@ function addButton() {
 function editButton() {
   alert("Not supported");
   return false;
+}
+
+function setupFeedLinks(o) {
+  var u = o.feedUrl;
+  $("#feedlink").html("<a href='" + u + "'><img src='static/feed.png' alt='News feed'></a>");
+  $("#feedurl").attr("value", u);
+  $("#subscribelink").show();
+  var o = $("#subscribelink > a").overlay({
+    api: true,
+    expose: '#333'
+  });
+  $("#subscribe-submit").click(function(){o.close()});
 }

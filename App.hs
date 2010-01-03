@@ -10,6 +10,7 @@ module App
 import Yesod
 import Yesod.Helpers.Auth
 import Yesod.Helpers.Static
+import Yesod.Helpers.AtomFeed
 import Model hiding (uuid)
 import Occurrence
 import Data.Object.Yaml
@@ -22,6 +23,7 @@ import Control.Exception (Exception)
 import Network.AWS.SimpleDB
 import qualified Data.UUID as UUID
 import Data.Time
+import Web.Encodings
 
 data Luach = Luach AWSConnection String
 
@@ -52,9 +54,13 @@ instance Yesod Luach where
     Get: getEventH
     Put: updateEventH
     Delete: deleteEventH
-/feed:
-    Get: getFeedH
+/upcoming:
+    Get: getUpcomingH
 /static/*filepath: serveStatic'
+/settings/feedid:
+    Get: getFeedIdH
+/feed/$ident/$feedId:
+    Get: getFeedH
 |]
 instance YesodApproot Luach where
     approot _ = Approot "http://localhost:3000/" -- FIXME
@@ -121,16 +127,51 @@ getEventH uuid = do
     unless (i == owner e) permissionDenied
     return e
 
-getFeedH :: Handler Luach Occurrences
-getFeedH = do
+getUpcomingH :: Handler Luach Occurrences
+getUpcomingH = do
     i <- authIdentifier
     Luach conn dn <- getYesod
     es <- liftIO $ getEvents conn dn i
-    today <- liftIO $ utctDay <$> getCurrentTime
-    let maxDay = addDays 7 today
+    liftIO $ getOccurrencesIO es
+
+getFeedIdH :: Handler Luach HtmlObject
+getFeedIdH = do
+    i <- authIdentifier
+    y@(Luach conn dn) <- getYesod
+    let (Approot ar) = approot y
+    forceReset <- runRequest $ getParam "forceReset"
+    feedId <- liftIO $ getFeedId conn dn i forceReset
+    return $ toHtmlObject
+                [ ("feedId", feedId)
+                , ("ident", i)
+                , ("feedUrl", ar ++ "feed/" ++ encodeUrl i ++ "/" ++
+                              encodeUrl feedId ++ "/")
+                ]
+
+getFeedH :: String -> String -> Handler Luach AtomFeedResponse
+getFeedH ident feedId = do
+    y@(Luach conn dn) <- getYesod
+    let (Approot ar) = approot y
+    isValid <- liftIO $ checkFeedId conn dn ident feedId
+    unless isValid notFound
+    es <- liftIO $ getEvents conn dn ident
+    now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO es
-    let os' = filter (\(d, _) -> d <= maxDay) os
-    return os'
+    atomFeed $ AtomFeed "Your upcoming reminders"
+                        (RelLoc $ "feed/" ++ encodeUrl ident ++ "/" ++
+                         encodeUrl feedId ++ "/")
+                        (RelLoc "")
+                        now
+                        (map (helper now) os)
+      where
+        helper :: UTCTime -> (Day, [Occurrence]) -> AtomFeedEntry
+        helper now (d, os) = AtomFeedEntry
+                            (RelLoc "")
+                            now
+                            ("Reminders for " ++ prettyDate d)
+                            $ Tag "ul" [] $ HtmlList $ map helper2 os
+        helper2 :: Occurrence -> Html
+        helper2 o = Tag "li" [] $ Text $ cs o
 
 serveStatic' :: Verb -> [String] -> Handler y [(ContentType, Content)]
 serveStatic' = serveStatic $ fileLookupDir "static"

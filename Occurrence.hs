@@ -5,6 +5,7 @@ module Occurrence
     ( Occurrence (..)
     , Occurrences
     , getOccurrencesIO
+    , prettyDate
 #if TEST
     , getOccurrences
     , testSuite
@@ -19,7 +20,7 @@ import Data.List
 import Data.Function
 import Data.UUID
 import Data.Object.Html
-import Data.Object
+import Data.Object.Text
 import Control.Arrow
 import Yesod
 import System.Locale
@@ -52,14 +53,22 @@ instance ConvertSuccess Occurrence HtmlObject where
         , ("years", show $ years o)
         , ("calendar", show $ calendarType o)
         ]
+instance ConvertSuccess Occurrence String where
+    convertSuccess o = otitle o ++ " - " ++ show (years o) ++ " on the " ++
+                       show (calendarType o) ++ " calendar"
+instance ConvertSuccess Occurrence Text where
+    convertSuccess = (cs :: String -> Text) . cs
 instance HasReps Occurrences where
     reps = error "reps Occurrences"
     chooseRep = chooseRep . toHtmlObject
 
+-- | Only does next 7 days.
 getOccurrencesIO :: [Event] -> IO [(Day, [Occurrence])]
 getOccurrencesIO es = do
     today <- utctDay <$> getCurrentTime
-    return $ getOccurrences today es
+    let maxDay = addDays 7 today
+    let os = getOccurrences today es
+    return $ filter (\(d, _) -> d <= maxDay) os
 
 getOccurrences :: Day -> [Event] -> [(Day, [Occurrence])]
 getOccurrences gtoday =

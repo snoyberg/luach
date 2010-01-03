@@ -9,6 +9,8 @@ module Model
     , getEvent
     , putEvent
     , deleteEvent
+    , getFeedId
+    , checkFeedId
     ) where
 
 import Data.Time.Calendar
@@ -26,6 +28,7 @@ import Yesod
 import qualified Data.UUID as UUID
 import Data.Function.Predicate
 import Data.Maybe
+import Control.Monad (when)
 
 data Event = Event
     { title :: String
@@ -115,3 +118,32 @@ deleteEvent conn domain event =
     case uuid event of
         Nothing -> failure $ DeleteMissingEvent event
         Just _ -> cs event >>= deleteAttributes conn domain
+
+feedIdKey :: String
+feedIdKey = "feedId"
+
+getFeedId :: AWSConnection -> String -> String -> Bool -> IO String
+getFeedId conn domain ident forceReset = do
+    (feedId, toSet) <- case forceReset of
+        True -> do
+            a <- toString <$> randomIO
+            return (a, True)
+        False -> do
+            i <- getAttributes conn domain ident [feedIdKey]
+            case i of
+                Item _ [] -> do
+                    a <- toString <$> randomIO
+                    return (a, True)
+                Item _ [feedIdKey := feedId'] -> return (feedId', False)
+                Item _ x -> error $ "Invalid getFeedId attribs: " ++ show x
+    when toSet $
+        putAttributes' conn domain (Item ident [feedIdKey := feedId])
+                       [feedIdKey]
+    return feedId
+
+checkFeedId :: AWSConnection -> String -> String -> String -> IO Bool
+checkFeedId conn domain ident feedId = do
+    i <- getAttributes conn domain ident [feedIdKey]
+    return $ case i of
+                Item _ [feedIdKey := feedId] -> True
+                _ -> False
