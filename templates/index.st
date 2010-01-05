@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Luach</title>
+    <title>Luach by Yesod</title>
     <script src="http://cdn.jquerytools.org/1.1.1/full/jquery.tools.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"></script>
     <script src="static/script.js"></script>
     <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.0/themes/start/jquery-ui.css">
     <link rel="stylesheet" href="static/style.css">
+    <link rel="icon" href="static/favicon.ico">
   </head>
   <body>
     <noscript>
       <p style="color:#f00">I'm sorry, this page requires Javascript to function.</p>
     </noscript>
     <div id="wrapper">
-      <div id="login">
+      <div id="banner">
+        <img class="logo" alt="Luach" src="static/logo.png" width="100" height="100">
+        <img class="beta" alt="Beta" src="static/beta.png" width="100" height="100">
         <h1>Luach</h1>
+        <h2>By Yesod Web Development</h2>
+      </div>
+      <div style="clear:both"></div>
+      <div id="login">
         <p>Welcome to Luach, your easy-to-use <b>reminder</b>. Tell us about your <b>birthdays</b> and <b>anniversaries</b>, and we'll give you a 7-day reminder of when they'll happen next.</p>
-        <p>We can give you reminders on both the <b>English</b> and <b>Hebrew</b> calendars. It's easy to get started: just log in!</p>
+        <p>We can give you reminders on both the <b>English</b> and <b>Hebrew</b> calendars. It's easy to get started: just log in! You don't need a special account with us, use one of the options below.</p>
         <div id="rpxnow">
             <iframe src="https://luach.rpxnow.com/openid/embed?token_url=$approot$auth/login/rpxnow/" scrolling="no" frameBorder="no">
             </iframe>
@@ -26,10 +33,12 @@
         <p id="logout">Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
         <div id="information">
           <h2>Luach Anniversary Reminder</h2>
-          <p>This free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>.</p>
           <p id="feedlink"></p>
           <p id="subscribelink"><a rel="#subscribe" href="#">Get e-mail reminders</a></p>
-          <p>Google Ads go here.</p>
+          <h4>
+          <p><a href="http://github.com/snoyberg/luach">See the code.</a></p>
+          <p><a href="http://www.yesodweb.com/lib/">Built on Yesod Web Framework.</a></p>
+          </h4>
         </div>
         <div id="upcoming">
           <h2>Upcoming Events</h2>
@@ -79,7 +88,7 @@
           <button id="cancel-new-event">Cancel</button>
         </form>
       </div>
-      <div id="footer"></div>
+      <div id="footer">This is a free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>. Please <a href="mailto:michael@snoyman.com">send us any questions or comments</a>.</div>
     </div>
     <div id="subscribe">
       <h1>Get reminders by e-mail</h1>

@@ -108,7 +108,7 @@ function showFeed(o) {
 }
 
 function addButton() {
-  $("#new-event > h2").text("Add new event");
+  $("#new-event > h2").text("Add New Event");
   $("#title").attr("value", "");
   $("#day").attr("value", "");
   $("#remindGreg").attr("checked", "checked");
@@ -122,7 +122,7 @@ function addButton() {
 
 function editButton() {
   var e = events[$(this).attr("rel")];
-  $("#new-event > h2").text("Edit event");
+  $("#new-event > h2").text("Edit Event");
   $("#title").attr("value", e.rawtitle);
   $("#day").attr("value", e.day);
   var remindGreg = false, remindHebrew = false;
