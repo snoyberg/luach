@@ -3,7 +3,9 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Model
-    ( Event (..)
+    ( Domain
+    , DBInfo (..)
+    , Event (..)
     , CalendarType (..)
     , getEvents
     , getEvent
@@ -33,6 +35,9 @@ import Control.Monad (when)
 import Data.Time
 import System.Locale
 
+type Domain = String
+data DBInfo = DBInfo AWSConnection Domain
+
 data Event = Event
     { title :: String
     , day :: Day
@@ -52,6 +57,7 @@ prettyDate = formatTime defaultTimeLocale "%A %B %e, %Y"
 instance ConvertSuccess Event HtmlObject where
     convertSuccess e = cs
         [ ("title", toHtmlObject $ title e)
+        , ("rawtitle", toHtmlObject $ Html $ cs $ title e)
         , ("day", cs $ (cs :: Day -> String) $ day e)
         , ("prettyday", cs $ prettyDate' $ day e)
         , ("reminders", cs $ reminders e)
@@ -105,19 +111,19 @@ instance ConvertAttempt Item Event where
         o <- SF.lookup "owner" m
         return $ Event t d r s (Just u) o
 
-getEvents :: AWSConnection -> String -> String -> IO [Event]
-getEvents conn domain owner' = do
+getEvents :: DBInfo -> String -> IO [Event]
+getEvents (DBInfo conn domain) owner' = do
     items <- select conn $ "select * from " ++ domain ++ " where owner='"
                            ++ owner' ++ "'"
     mapM convertAttemptWrap items
 
-getEvent :: AWSConnection -> String -> String -> IO (Maybe Event)
-getEvent conn domain uuid' = do
+getEvent :: DBInfo -> String -> IO (Maybe Event)
+getEvent (DBInfo conn domain) uuid' = do
     i <- getAttributes conn domain uuid' []
     return $ convertAttemptWrap i
 
-putEvent :: AWSConnection -> String -> Event -> IO ()
-putEvent conn domain event = do
+putEvent :: DBInfo -> Event -> IO ()
+putEvent (DBInfo conn domain) event = do
     i@(Item _ attrs) <- cs event
     let keys = map (\(k := _) -> k) attrs
     putAttributes' conn domain i keys
@@ -126,8 +132,8 @@ data DeleteMissingEvent = DeleteMissingEvent Event
     deriving (Show, Typeable)
 instance Exception DeleteMissingEvent
 
-deleteEvent :: AWSConnection -> String -> Event -> IO ()
-deleteEvent conn domain event =
+deleteEvent :: DBInfo -> Event -> IO ()
+deleteEvent (DBInfo conn domain) event =
     case uuid event of
         Nothing -> failure $ DeleteMissingEvent event
         Just _ -> cs event >>= deleteAttributes conn domain
@@ -135,8 +141,8 @@ deleteEvent conn domain event =
 feedIdKey :: String
 feedIdKey = "feedId"
 
-getFeedId :: AWSConnection -> String -> String -> Bool -> IO String
-getFeedId conn domain ident forceReset = do
+getFeedId :: DBInfo -> String -> Bool -> IO String
+getFeedId (DBInfo conn domain) ident forceReset = do
     (feedId, toSet) <- case forceReset of
         True -> do
             a <- toString <$> randomIO
@@ -154,8 +160,8 @@ getFeedId conn domain ident forceReset = do
                        [feedIdKey]
     return feedId
 
-checkFeedId :: AWSConnection -> String -> String -> String -> IO Bool
-checkFeedId conn domain ident feedId = do
+checkFeedId :: DBInfo -> String -> String -> IO Bool
+checkFeedId (DBInfo conn domain) ident feedId = do
     i <- getAttributes conn domain ident [feedIdKey]
     return $ case i of
                 Item _ [feedIdKey := feedId] -> True

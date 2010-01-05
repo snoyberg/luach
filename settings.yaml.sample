@@ -1,3 +1,5 @@
 access-key: Access key goes here
 secret-key: Secret key goes here
 domain: Domain goes here
+rpxnow-key: RPXNOW API key goes here.
+approot: Your approot.

@@ -122,7 +122,7 @@ function addButton() {
 function editButton() {
   var e = events[$(this).attr("rel")];
   $("#new-event > h2").text("Edit event");
-  $("#title").attr("value", e.title);
+  $("#title").attr("value", e.rawtitle);
   $("#day").attr("value", e.day);
   var remindGreg = false, remindHebrew = false;
   $.each(e.reminders, function(i, v) {
@@ -142,7 +142,7 @@ function editButton() {
   } else {
       $("#remindHebrew").removeAttr("checked");
   }
-  if (e.sunset) {
+  if (e.sunset == "true") {
       $("#afterSunset").attr("checked", "checked");
   } else {
       $("#afterSunset").removeAttr("checked");

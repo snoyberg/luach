@@ -25,7 +25,11 @@ import qualified Data.UUID as UUID
 import Data.Time
 import Web.Encodings
 
-data Luach = Luach AWSConnection String
+data Luach = Luach
+    { dbInfo :: DBInfo
+    , rpxnowKey :: String
+    , theApproot :: String
+    }
 
 data InvalidLuach = InvalidLuach StringObject
     deriving (Show, Typeable)
@@ -35,11 +39,15 @@ instance ConvertAttempt YamlDoc Luach where
         helper :: StringObject -> Attempt Luach
         helper o = wrapFailure (\_ -> InvalidLuach o) $ do
             m <- fromMapping o
-            Luach <$> (amazonSimpleDBConnection
-                        <$> lookupObject "access-key" m
-                        <*> lookupObject "secret-key" m
+            Luach <$> (DBInfo
+                        <$> (amazonSimpleDBConnection
+                                <$> lookupObject "access-key" m
+                                <*> lookupObject "secret-key" m
+                            )
+                        <*> lookupObject "domain" m
                       )
-                  <*> lookupObject "domain" m
+                      <*> lookupObject "rpxnow-key" m
+                      <*> lookupObject "approot" m
 
 
 instance Yesod Luach where
@@ -62,17 +70,23 @@ instance Yesod Luach where
 /feed/$ident/$feedId:
     Get: getFeedH
 |]
+    templateDir _ = "templates"
 instance YesodApproot Luach where
-    approot _ = Approot "http://localhost:3000/" -- FIXME
-instance YesodAuth Luach
+    approot = Approot . theApproot
+instance YesodAuth Luach where
+    rpxnowApiKey = Just . rpxnowKey
 
-homepage :: Handler Luach StaticFile
-homepage = return $ StaticFile TypeHtml "templates/index.html"
+homepage :: Handler Luach Template
+homepage = do
+    y <- getYesod
+    template "index" "no-object" (cs "no-object") $ return
+            [ ("approot", cs $ unApproot $ approot y)
+            ]
 
 getEventsHelper :: String -> Handler Luach HtmlObject
 getEventsHelper i = do
-    (Luach conn dn) <- getYesod
-    liftIO $ helper <$> getEvents conn dn i
+    y <- getYesod
+    liftIO $ helper <$> getEvents (dbInfo y) i
         where
             helper :: [Event] -> HtmlObject
             helper = Sequence . map cs
@@ -91,8 +105,8 @@ putEventHelper uuid = do
             (if h then [Hebrew] else [])
     s <- runRequest $ postParam "afterSunset"
     let e = Event t d r s uuid o
-    Luach conn dn <- getYesod
-    liftIO $ putEvent conn dn e
+    y <- getYesod
+    liftIO $ putEvent (dbInfo y) e
     getEventsHelper o
 
 putEventH :: Handler Luach HtmlObject
@@ -105,21 +119,21 @@ updateEventH uuid = do
 
 deleteEventH :: String -> Handler Luach HtmlObject
 deleteEventH uuid = do
-    Luach conn dn <- getYesod
-    e' <- liftIO $ getEvent conn dn uuid
+    y <- getYesod
+    e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
             Nothing -> notFound
             Just x -> return x
     i <- authIdentifier
     unless (i == owner e) permissionDenied
-    liftIO $ deleteEvent conn dn e
+    liftIO $ deleteEvent (dbInfo y) e
     Approot ar <- getApproot
     getEventsHelper i
 
 getEventH :: String -> Handler Luach Event
 getEventH uuid = do
-    Luach conn dn <- getYesod
-    e' <- liftIO $ getEvent conn dn uuid
+    y <- getYesod
+    e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
             Nothing -> notFound
             Just x -> return x
@@ -130,17 +144,17 @@ getEventH uuid = do
 getUpcomingH :: Handler Luach Occurrences
 getUpcomingH = do
     i <- authIdentifier
-    Luach conn dn <- getYesod
-    es <- liftIO $ getEvents conn dn i
+    y <- getYesod
+    es <- liftIO $ getEvents (dbInfo y) i
     liftIO $ getOccurrencesIO es
 
 getFeedIdH :: Handler Luach HtmlObject
 getFeedIdH = do
     i <- authIdentifier
-    y@(Luach conn dn) <- getYesod
+    y <- getYesod
     let (Approot ar) = approot y
     forceReset <- runRequest $ getParam "forceReset"
-    feedId <- liftIO $ getFeedId conn dn i forceReset
+    feedId <- liftIO $ getFeedId (dbInfo y) i forceReset
     return $ toHtmlObject
                 [ ("feedId", feedId)
                 , ("ident", i)
@@ -150,11 +164,11 @@ getFeedIdH = do
 
 getFeedH :: String -> String -> Handler Luach AtomFeedResponse
 getFeedH ident feedId = do
-    y@(Luach conn dn) <- getYesod
+    y <- getYesod
     let (Approot ar) = approot y
-    isValid <- liftIO $ checkFeedId conn dn ident feedId
+    isValid <- liftIO $ checkFeedId (dbInfo y) ident feedId
     unless isValid notFound
-    es <- liftIO $ getEvents conn dn ident
+    es <- liftIO $ getEvents (dbInfo y) ident
     now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO es
     atomFeed $ AtomFeed "Your upcoming reminders"

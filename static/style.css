@@ -118,6 +118,10 @@ body {
   text-align: center;
 }
 
+img {
+  border: 0;
+}
+
 #new-event {
   display: none;
 }
@@ -171,3 +175,15 @@ body {
 }
 
 .ui-datepicker { z-index:9999; }
+
+#rpxnow {
+    text-align: center;
+}
+
+#rpxnow iframe {
+    width: 310px;
+    height: 150px;
+    background-color: #fff;
+    border: 1px solid black;
+    padding: 1em;
+}

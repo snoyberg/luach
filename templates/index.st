@@ -17,11 +17,10 @@
         <h1>Luach</h1>
         <p>Welcome to Luach, your easy-to-use <b>reminder</b>. Tell us about your <b>birthdays</b> and <b>anniversaries</b>, and we'll give you a 7-day reminder of when they'll happen next.</p>
         <p>We can give you reminders on both the <b>English</b> and <b>Hebrew</b> calendars. It's easy to get started: just log in!</p>
-        <form method="get" action="auth/openid/forward/">
-          <label for="openid">OpenID: </label>
-          <input type="text" id="openid" name="openid">
-          <input type="submit" value="Login">
-        </form>
+        <div id="rpxnow">
+            <iframe src="https://luach.rpxnow.com/openid/embed?token_url=$approot$auth/login/rpxnow/" scrolling="no" frameBorder="no">
+            </iframe>
+        </div>
       </div>
       <div id="interface">
         <p id="logout">Logged in as: <span id="ident"></span>. <a href="auth/logout/">Logout</a>.</p>
