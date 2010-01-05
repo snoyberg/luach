@@ -173,7 +173,7 @@ getFeedH ident feedId = do
       where
         helper :: UTCTime -> (Day, [Occurrence]) -> AtomFeedEntry
         helper now (d, os) = AtomFeedEntry
-                            (RelLoc "")
+                            (RelLoc $ "#" ++ cs d)
                             now
                             ("Reminders for " ++ prettyDate d)
                             $ Tag "ul" [] $ HtmlList $ map helper2 os
