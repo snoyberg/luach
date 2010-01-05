@@ -43,8 +43,9 @@ $(function(){
   */
 });
 
-function showEvents(es) {
-  $.getJSON("upcoming/", showFeed);
+function showEvents(o) {
+  var es = o.events;
+  showFeed(o.upcoming);
   var h = [];
   if (! es.length) {
     h.push("<p>You have no events.</p>");

@@ -62,8 +62,6 @@ instance Yesod Luach where
     Get: getEventH
     Put: updateEventH
     Delete: deleteEventH
-/upcoming:
-    Get: getUpcomingH
 /static/*filepath: serveStatic'
 /settings/feedid:
     Get: getFeedIdH
@@ -86,10 +84,12 @@ homepage = do
 getEventsHelper :: String -> Handler Luach HtmlObject
 getEventsHelper i = do
     y <- getYesod
-    liftIO $ helper <$> getEvents (dbInfo y) i
-        where
-            helper :: [Event] -> HtmlObject
-            helper = Sequence . map cs
+    es <- liftIO $ getEvents (dbInfo y) i
+    os <- liftIO $ getOccurrencesIO es
+    return $ cs
+        [ ("events", Sequence $ map toHtmlObject es)
+        , ("upcoming", cs os)
+        ]
 
 getEventsH :: Handler Luach HtmlObject
 getEventsH = authIdentifier >>= getEventsHelper
@@ -140,13 +140,6 @@ getEventH uuid = do
     i <- authIdentifier
     unless (i == owner e) permissionDenied
     return e
-
-getUpcomingH :: Handler Luach Occurrences
-getUpcomingH = do
-    i <- authIdentifier
-    y <- getYesod
-    es <- liftIO $ getEvents (dbInfo y) i
-    liftIO $ getOccurrencesIO es
 
 getFeedIdH :: Handler Luach HtmlObject
 getFeedIdH = do
