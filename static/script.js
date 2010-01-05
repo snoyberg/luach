@@ -26,7 +26,7 @@ $(function(){
   $.getJSON("auth/check/", function(o){
     if (o.identifier) {
       $("#login").hide();
-      $("#ident").text(o.identifier);
+      $("#ident").text(o.displayName);
       $.getJSON("event/", showEvents);
       $.getJSON("settings/feedid/", setupFeedLinks);
     } else {
