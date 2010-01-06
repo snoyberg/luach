@@ -163,7 +163,7 @@ function setupFeedLinks(o) {
     api: true,
     expose: '#333'
   });
-  $("#subscribe-submit").click(function(){o.close()});
+  $("#subscribe > form").submit(function(){o.close()});
 }
 
 function cancelNewEvent() {

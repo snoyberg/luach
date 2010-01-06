@@ -160,9 +160,15 @@ getFeedId (DBInfo conn domain) ident forceReset = do
                        [feedIdKey]
     return feedId
 
-checkFeedId :: DBInfo -> String -> String -> IO Bool
-checkFeedId (DBInfo conn domain) ident feedId = do
-    i <- getAttributes conn domain ident [feedIdKey]
+checkFeedId :: DBInfo -> String -> IO (Maybe String)
+checkFeedId (DBInfo conn domain) feedId = do
+    i <- select conn $ "select itemName() from " ++ domain ++ " where " ++
+                       feedIdKey ++ "='" ++ simpleEscape feedId ++ "'"
     return $ case i of
-                Item _ [feedIdKey := feedId] -> True
-                _ -> False
+                [Item ident _] -> Just ident
+                _ -> Nothing
+
+simpleEscape = concatMap h where
+    h '\'' = "\\'"
+    h '\\' = "\\\\"
+    h c = [c]

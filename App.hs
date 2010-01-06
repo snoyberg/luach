@@ -65,7 +65,7 @@ instance Yesod Luach where
 /static/*filepath: serveStatic'
 /settings/feedid:
     Get: getFeedIdH
-/feed/$ident/$feedId:
+/feed/$feedId:
     Get: getFeedH
 |]
     templateDir _ = "templates"
@@ -151,16 +151,17 @@ getFeedIdH = do
     return $ toHtmlObject
                 [ ("feedId", feedId)
                 , ("ident", i)
-                , ("feedUrl", ar ++ "feed/" ++ encodeUrl i ++ "/" ++
-                              encodeUrl feedId ++ "/")
+                , ("feedUrl", ar ++ "feed/" ++ encodeUrl feedId ++ "/")
                 ]
 
-getFeedH :: String -> String -> Handler Luach AtomFeedResponse
-getFeedH ident feedId = do
+getFeedH :: String -> Handler Luach AtomFeedResponse
+getFeedH feedId = do
     y <- getYesod
     let (Approot ar) = approot y
-    isValid <- liftIO $ checkFeedId (dbInfo y) ident feedId
-    unless isValid notFound
+    ident' <- liftIO $ checkFeedId (dbInfo y) feedId
+    ident <- case ident' of
+                Nothing -> notFound
+                Just x -> return x
     es <- liftIO $ getEvents (dbInfo y) ident
     now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO es

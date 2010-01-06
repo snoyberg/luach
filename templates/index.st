@@ -37,7 +37,7 @@
           <p id="subscribelink"><a rel="#subscribe" href="#">Get e-mail reminders</a></p>
           <h4>
           <p><a href="http://github.com/snoyberg/luach">See the code.</a></p>
-          <p><a href="http://www.yesodweb.com/lib/">Built on Yesod Web Framework.</a></p>
+          <p><a href="http://www.yesodweb.com/code.html">Built on Yesod Web Framework.</a></p>
           </h4>
         </div>
         <div id="upcoming">
