@@ -166,8 +166,7 @@ getFeedH feedId = do
     now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO es
     atomFeed $ AtomFeed "Your upcoming reminders"
-                        (RelLoc $ "feed/" ++ encodeUrl ident ++ "/" ++
-                         encodeUrl feedId ++ "/")
+                        (RelLoc $ "feed/" ++ encodeUrl feedId ++ "/")
                         (RelLoc "")
                         now
                         (map (helper now) os)
