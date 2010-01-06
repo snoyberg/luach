@@ -22,7 +22,6 @@ $(function(){
         closeOnClick: false
     }
   });
-  $("#subscribe-submit").click(function(){o.close()});
   $.getJSON("auth/check/", function(o){
     if (o.identifier) {
       $("#login").hide();
