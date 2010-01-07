@@ -1,3 +1,7 @@
+#login, #interface {
+  display: none;
+}
+
 .tooltip {
   display: none;
   position: relative;
