@@ -19,8 +19,6 @@ import Data.Function
 import Data.UUID
 import Data.Object.Html
 import Data.Object.Text
-import Control.Arrow
-import Yesod
 import Data.Time
 
 #if TEST
@@ -56,9 +54,6 @@ instance ConvertSuccess Occurrence String where
                        show (calendarType o) ++ " calendar"
 instance ConvertSuccess Occurrence Text where
     convertSuccess = (cs :: String -> Text) . cs
-instance HasReps Occurrences where
-    reps = error "reps Occurrences"
-    chooseRep = chooseRep . toHtmlObject
 
 -- | Only does next 7 days.
 getOccurrencesIO :: [Event] -> IO [(Day, [Occurrence])]
@@ -119,7 +114,7 @@ caseOccurrences = do
         myUuid = Nothing
         myUuidStr = ""
         myOwner = "michael"
-    let es = [Event myTitle myBday True False myUuid myOwner]
+    let es = [Event myTitle myBday [Gregorian] False myUuid myOwner]
     let expected = [(fromGregorian 2010 1 12,
                         [ Occurrence Gregorian myTitle myUuidStr 25
                         ]

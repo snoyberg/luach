@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 module App
     ( app
@@ -24,34 +25,38 @@ import Network.AWS.SimpleDB
 import qualified Data.UUID as UUID
 import Data.Time
 import Web.Encodings
+import Data.Object.Json
 
 data Luach = Luach
     { dbInfo :: DBInfo
     , rpxnowKey :: String
     , theApproot :: String
+    , luachTG :: TemplateGroup
     }
 
 data InvalidLuach = InvalidLuach StringObject
     deriving (Show, Typeable)
 instance Exception InvalidLuach
-instance ConvertAttempt YamlDoc Luach where
-    convertAttempt = helper <=< ca where
-        helper :: StringObject -> Attempt Luach
-        helper o = wrapFailure (\_ -> InvalidLuach o) $ do
-            m <- fromMapping o
-            Luach <$> (DBInfo
-                        <$> (amazonSimpleDBConnection
-                                <$> lookupObject "access-key" m
-                                <*> lookupObject "secret-key" m
-                            )
-                        <*> lookupObject "domain" m
-                      )
-                      <*> lookupObject "rpxnow-key" m
-                      <*> lookupObject "approot" m
 
+mkLuach :: FromAttempt m
+        => StringObject
+        -> TemplateGroup
+        -> m Luach
+mkLuach o tg = fa $ do
+    m <- fromMapping o
+    Luach <$> (DBInfo
+                <$> (amazonSimpleDBConnection
+                        <$> lookupObject "access-key" m
+                        <*> lookupObject "secret-key" m
+                    )
+                <*> lookupObject "domain" m
+              )
+              <*> lookupObject "rpxnow-key" m
+              <*> lookupObject "approot" m
+              <*> pure tg
 
 instance Yesod Luach where
-    handlers = [$resources|
+    resources = [$mkResources|
 /:
     Get: homepage
 /auth/*: authHandler
@@ -68,56 +73,113 @@ instance Yesod Luach where
 /feed/$feedId:
     Get: getFeedH
 |]
-    templateDir _ = "templates"
 instance YesodApproot Luach where
-    approot = Approot . theApproot
+    approot = theApproot
 instance YesodAuth Luach where
     rpxnowApiKey = Just . rpxnowKey
+instance YesodTemplate Luach where
+    getTemplateGroup = luachTG
 
-homepage :: Handler Luach Template
+homepage :: Handler Luach ChooseRep
 homepage = do
     y <- getYesod
-    template "index" "no-object" (cs "no-object") $ return
-            [ ("approot", cs $ unApproot $ approot y)
-            ]
+    template "index" (cs "FIXME") $ \_ -> return
+        . setAttribute "approot" (toHtmlObject $ approot y)
 
-getEventsHelper :: String -> Handler Luach HtmlObject
+getEventsHelper :: String -> Handler Luach JsonResponse
 getEventsHelper i = do
     y <- getYesod
     es <- liftIO $ getEvents (dbInfo y) i
     os <- liftIO $ getOccurrencesIO es
-    return $ cs
+    return $ JsonResponse $ cs
         [ ("events", Sequence $ map toHtmlObject es)
-        , ("upcoming", cs os)
+        , ("upcoming", toHtmlObject os)
         ]
 
-getEventsH :: Handler Luach HtmlObject
+-- FIXME put into yesod
+newtype JsonResponse = JsonResponse HtmlObject
+instance HasReps JsonResponse where
+    chooseRep (JsonResponse ho) _ = return (TypeJson, cs $ unJsonDoc $ cs ho)
+
+getEventsH :: Handler Luach JsonResponse
 getEventsH = authIdentifier >>= getEventsHelper
 
-putEventHelper :: Maybe UUID.UUID -> Handler Luach HtmlObject
+-- FIXME move the following code to yesod
+data Form x = Form ((ParamName -> [ParamValue]) -> Either [FormError] x)
+instance Functor Form where
+    fmap f (Form x) = Form $ \l -> fmap f (x l)
+instance Applicative Form where
+    pure x = Form $ \_ -> Right x
+    (Form f') <*> (Form x') = Form $ \l -> case (f' l, x' l) of
+        (Right f, Right x) -> Right $ f x
+        (Left e1, Left e2) -> Left $ e1 ++ e2
+        (Left e, _) -> Left e
+        (_, Left e) -> Left e
+
+type FormError = String
+
+runForm :: Form x -> Handler y x
+runForm (Form f) = do
+    rr <- getRawRequest
+    case f $ postParams rr of
+        Left es -> invalidArgs $ map (\x -> ("FIXME", x)) es
+        Right x -> return x
+
+input :: ParamName -> Form [ParamValue]
+input pn = Form $ \l -> Right $ l pn
+
+applyForm :: (x -> Either [FormError] y) -> Form x -> Form y
+applyForm f (Form x') = Form $ \l -> case x' l of
+                            Left es -> Left es
+                            Right x -> f x
+
+required :: Form [ParamValue] -> Form ParamValue
+required = applyForm $ \pvs -> case pvs of
+                [x] -> Right x
+                [] -> Left ["No value for required field"]
+                _ -> Left ["Multiple values for required field"]
+
+notEmpty :: Form ParamValue -> Form ParamValue
+notEmpty = applyForm $ \pv ->
+                if null pv
+                    then Left ["Value required"]
+                    else Right pv
+
+checkDay :: Form ParamValue -> Form Day
+checkDay = applyForm $ attempt (const (Left ["Invalid day"])) Right . ca
+
+checkBool :: Form [ParamValue] -> Form Bool
+checkBool = applyForm $ \pv -> Right $ case pv of
+                                        [] -> False
+                                        [""] -> False
+                                        ["false"] -> False
+                                        _ -> True
+
+putEventHelper :: Maybe UUID.UUID -> Handler Luach JsonResponse
 putEventHelper uuid = do
     o <- authIdentifier
-    t <- runRequest $ postParam "title"
-    d <- runRequest $ postParam "day"
-    g <- runRequest $ postParam "remindGreg"
-    h <- runRequest $ postParam "remindHebrew"
+    (t, d, g, h, s) <- runForm $ (,,,,)
+                        <$> notEmpty (required $ input "title")
+                        <*> checkDay (required $ input "day")
+                        <*> checkBool (input "remindGreg")
+                        <*> checkBool (input "remindHebrew")
+                        <*> checkBool (input "afterSunset")
     let r = (if g then [Gregorian] else []) ++
             (if h then [Hebrew] else [])
-    s <- runRequest $ postParam "afterSunset"
     let e = Event t d r s uuid o
     y <- getYesod
     liftIO $ putEvent (dbInfo y) e
     getEventsHelper o
 
-putEventH :: Handler Luach HtmlObject
+putEventH :: Handler Luach JsonResponse
 putEventH = putEventHelper Nothing
 
-updateEventH :: String -> Handler Luach HtmlObject
+updateEventH :: String -> Handler Luach JsonResponse
 updateEventH uuid = do
     uuid' <- try $ UUID.fromString uuid
     putEventHelper $ Just uuid'
 
-deleteEventH :: String -> Handler Luach HtmlObject
+deleteEventH :: String -> Handler Luach JsonResponse
 deleteEventH uuid = do
     y <- getYesod
     e' <- liftIO $ getEvent (dbInfo y) uuid
@@ -127,7 +189,6 @@ deleteEventH uuid = do
     i <- authIdentifier
     unless (i == owner e) permissionDenied
     liftIO $ deleteEvent (dbInfo y) e
-    Approot ar <- getApproot
     getEventsHelper i
 
 getEventH :: String -> Handler Luach Event
@@ -141,23 +202,24 @@ getEventH uuid = do
     unless (i == owner e) permissionDenied
     return e
 
-getFeedIdH :: Handler Luach HtmlObject
+getFeedIdH :: Handler Luach JsonResponse
 getFeedIdH = do
     i <- authIdentifier
     y <- getYesod
-    let (Approot ar) = approot y
-    forceReset <- runRequest $ getParam "forceReset"
+    rr <- getRawRequest
+    let forceReset = case getParams rr "forceReset" of
+                        [] -> False
+                        _ -> True
     feedId <- liftIO $ getFeedId (dbInfo y) i forceReset
-    return $ toHtmlObject
+    return $ JsonResponse $ toHtmlObject
                 [ ("feedId", feedId)
                 , ("ident", i)
-                , ("feedUrl", ar ++ "feed/" ++ encodeUrl feedId ++ "/")
+                , ("feedUrl", approot y ++ "feed/" ++ encodeUrl feedId ++ "/")
                 ]
 
 getFeedH :: String -> Handler Luach AtomFeedResponse
 getFeedH feedId = do
     y <- getYesod
-    let (Approot ar) = approot y
     ident' <- liftIO $ checkFeedId (dbInfo y) feedId
     ident <- case ident' of
                 Nothing -> notFound
@@ -178,13 +240,17 @@ getFeedH feedId = do
                             ("Reminders for " ++ prettyDate d)
                             $ Tag "ul" [] $ HtmlList $ map helper2 os
         helper2 :: Occurrence -> Html
-        helper2 o = Tag "li" [] $ Text $ cs o
+        helper2 o = Tag "li" [] $ cs $ toHtmlObject o
 
 serveStatic' :: Verb -> [String] -> Handler y [(ContentType, Content)]
 serveStatic' = serveStatic $ fileLookupDir "static"
 
 readLuach :: IO Luach
-readLuach = readYamlDoc "settings.yaml" >>= convertAttemptWrap
+readLuach = do
+    so <- decodeFile "settings.yaml"
+    tg <- loadTemplateGroup "templates"
+    mkLuach so tg
+
 
 app :: IO Application
-app = toHackApp <$> readLuach
+app = readLuach >>= toWaiApp

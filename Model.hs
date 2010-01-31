@@ -22,7 +22,6 @@ import Data.UUID
 import Network.AWS.SimpleDB
 import System.Random
 import qualified Safe.Failure as SF
-import Control.Failure
 import Data.Convertible.Text
 import Control.Applicative
 import Data.Typeable (Typeable)
@@ -34,6 +33,7 @@ import Data.Maybe
 import Control.Monad (when)
 import Data.Time
 import System.Locale
+import Data.Object.Json
 
 type Domain = String
 data DBInfo = DBInfo AWSConnection Domain
@@ -65,8 +65,7 @@ instance ConvertSuccess Event HtmlObject where
         , ("uuid", cs $ maybe "" UUID.toString $ Model.uuid e)
         ]
 instance HasReps Event where
-    reps = error "reps Event"
-    chooseRep = chooseRep . toHtmlObject
+    chooseRep e _ = return (TypeJson, cs $ unJsonDoc $ cs $ toHtmlObject e)
 
 data CalendarType = Gregorian | Hebrew
     deriving (Eq, Show, Read)
@@ -153,7 +152,7 @@ getFeedId (DBInfo conn domain) ident forceReset = do
                 Item _ [] -> do
                     a <- toString <$> randomIO
                     return (a, True)
-                Item _ [feedIdKey := feedId'] -> return (feedId', False)
+                Item _ [_FIXMEfeedIdKey := feedId'] -> return (feedId', False)
                 Item _ x -> error $ "Invalid getFeedId attribs: " ++ show x
     when toSet $
         putAttributes' conn domain (Item ident [feedIdKey := feedId])
@@ -168,6 +167,7 @@ checkFeedId (DBInfo conn domain) feedId = do
                 [Item ident _] -> Just ident
                 _ -> Nothing
 
+simpleEscape :: String -> String
 simpleEscape = concatMap h where
     h '\'' = "\\'"
     h '\\' = "\\\\"

@@ -88,7 +88,10 @@
           <button id="cancel-new-event">Cancel</button>
         </form>
       </div>
-      <div id="footer">This is a free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>. Please <a href="mailto:michael@snoyman.com">send us any questions or comments</a>.</div>
+      <div id="footer">
+        <p>This is a free service provided by <a href="http://www.yesodweb.com/">Yesod Web Development</a>. Please <a href="mailto:michael@snoyman.com">send us any questions or comments</a>.</p>
+<script type="text/javascript" src="http://w.sharethis.com/button/sharethis.js#publisher=15f87d1a-b30a-4aac-a817-e38767744b64&amp;type=website"></script>
+</div>
     </div>
     <div id="subscribe">
       <h1>Get reminders by e-mail</h1>
