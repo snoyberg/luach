@@ -104,61 +104,10 @@ instance HasReps JsonResponse where
 getEventsH :: Handler Luach JsonResponse
 getEventsH = authIdentifier >>= getEventsHelper
 
--- FIXME move the following code to yesod
-data Form x = Form ((ParamName -> [ParamValue]) -> Either [FormError] x)
-instance Functor Form where
-    fmap f (Form x) = Form $ \l -> fmap f (x l)
-instance Applicative Form where
-    pure x = Form $ \_ -> Right x
-    (Form f') <*> (Form x') = Form $ \l -> case (f' l, x' l) of
-        (Right f, Right x) -> Right $ f x
-        (Left e1, Left e2) -> Left $ e1 ++ e2
-        (Left e, _) -> Left e
-        (_, Left e) -> Left e
-
-type FormError = String
-
-runForm :: Form x -> Handler y x
-runForm (Form f) = do
-    rr <- getRawRequest
-    case f $ postParams rr of
-        Left es -> invalidArgs $ map (\x -> ("FIXME", x)) es
-        Right x -> return x
-
-input :: ParamName -> Form [ParamValue]
-input pn = Form $ \l -> Right $ l pn
-
-applyForm :: (x -> Either [FormError] y) -> Form x -> Form y
-applyForm f (Form x') = Form $ \l -> case x' l of
-                            Left es -> Left es
-                            Right x -> f x
-
-required :: Form [ParamValue] -> Form ParamValue
-required = applyForm $ \pvs -> case pvs of
-                [x] -> Right x
-                [] -> Left ["No value for required field"]
-                _ -> Left ["Multiple values for required field"]
-
-notEmpty :: Form ParamValue -> Form ParamValue
-notEmpty = applyForm $ \pv ->
-                if null pv
-                    then Left ["Value required"]
-                    else Right pv
-
-checkDay :: Form ParamValue -> Form Day
-checkDay = applyForm $ attempt (const (Left ["Invalid day"])) Right . ca
-
-checkBool :: Form [ParamValue] -> Form Bool
-checkBool = applyForm $ \pv -> Right $ case pv of
-                                        [] -> False
-                                        [""] -> False
-                                        ["false"] -> False
-                                        _ -> True
-
 putEventHelper :: Maybe UUID.UUID -> Handler Luach JsonResponse
 putEventHelper uuid = do
     o <- authIdentifier
-    (t, d, g, h, s) <- runForm $ (,,,,)
+    (t, d, g, h, s) <- runFormPost $ (,,,,)
                         <$> notEmpty (required $ input "title")
                         <*> checkDay (required $ input "day")
                         <*> checkBool (input "remindGreg")
