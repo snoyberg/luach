@@ -22,9 +22,8 @@ $(function(){
         closeOnClick: false
     }
   });
-  $.getJSON("auth/check/", function(o){
-    if (o.identifier) {
-      $("#ident").text(o.displayName);
+  $.getJSON("@AuthR.CheckR@", function(o){
+    if (o.logged_in) {
       $.getJSON("event/", showEvents);
       $.getJSON("settings/feedid/", setupFeedLinks);
       $("#interface").show();
@@ -54,7 +53,7 @@ function showEvents(o) {
     $.each(es, function(i, e){
       events[i] = e;
       h.push("<tr class='");
-      h.push(i % 2 ? "odd" : "even");
+      h.push(i %% 2 ? "odd" : "even");
       h.push("'>");
       h.push("<td>");
       h.push(e.title);

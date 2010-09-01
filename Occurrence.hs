@@ -6,18 +6,19 @@ module Occurrence
     , Occurrences
     , getOccurrencesIO
     , prettyOccurrence
+    , occurrencesToJson
 #if TEST
     , getOccurrences
     , testSuite
 #endif
     ) where
 
+import Yesod.Json
 import Model
 import Control.Applicative
 import Data.Time.Calendar.Hebrew
 import Data.List
 import Data.Function
-import Data.UUID
 import Data.Time
 
 #if TEST
@@ -26,10 +27,12 @@ import Test.Framework.Providers.HUnit
 import Test.HUnit hiding (Test)
 #endif
 
+data CalendarType = Gregorian | Hebrew
+    deriving (Show, Eq)
+
 data Occurrence = Occurrence
     { calendarType :: CalendarType
     , otitle :: String
-    , ouuid :: String
     , years :: Integer
     }
     deriving (Show, Eq)
@@ -43,13 +46,23 @@ instance ConvertSuccess Occurrences HtmlObject where
             [ ("day", toHtmlObject $ prettyDate d)
             , ("o", Sequence $ map cs o)
             ]
-instance ConvertSuccess Occurrence HtmlObject where
-    convertSuccess o = cs
-        [ ("title", otitle o)
-        , ("years", show $ years o)
-        , ("calendar", show $ calendarType o)
-        ]
 -}
+
+occurrencesToJson :: Occurrences -> Json
+occurrencesToJson =
+    jsonList . map go
+  where
+    go (d, o) = jsonMap
+        [ ("day", jsonScalar $ prettyDate d)
+        , ("o", jsonList $ map occurrenceToJson o)
+        ]
+
+occurrenceToJson :: Occurrence -> Json
+occurrenceToJson o = jsonMap
+    [ ("title", jsonScalar $ otitle o)
+    , ("years", jsonScalar $ show $ years o)
+    , ("calendar", jsonScalar $ show $ calendarType o)
+    ]
 
 prettyOccurrence :: Occurrence -> String
 prettyOccurrence o = otitle o ++ " - " ++ show (years o) ++ " on the " ++
@@ -76,30 +89,27 @@ hoist [] = error "Empty list to hoist"
 
 -- | next occurences
 nos :: Day -> HebrewDate -> Event -> [(Day, Occurrence)]
-nos gd hd e = map nos' $ reminders e where
-    nos' :: CalendarType -> (Day, Occurrence)
-    nos' Gregorian =
-                let (yOrig, m, da) = toGregorian $ day e
+nos gd hd e =
+    (if eventGregorian e then [nosGregorian] else []) ++
+    (if eventHebrew e then [nosHebrew] else [])
+  where
+    nosGregorian =
+                let (yOrig, m, da) = toGregorian $ eventDay e
                     (y, m', da') = toGregorian gd
                     y' = if m' > m || (m' == m && da' > da)
                             then y + 1
                             else y
                     gd' = fromGregorian y' m da
                     years' = y' - yOrig
-                    o = Occurrence Gregorian (title e) (showUUID e) years'
+                    o = Occurrence Gregorian (eventTitle e) years'
                  in (gd', o)
-    nos' Hebrew =
-                let day' = addDays (if afterSunset e then 1 else 0) $ day e
+    nosHebrew =
+                let day' = addDays (if eventAfterSunset e then 1 else 0) $ eventDay e
                     orig = toHebrew day'
                     hd' = nextAnniversary hd orig
                     years' = fromIntegral $ year hd' - year orig
-                    o = Occurrence Hebrew (title e) (showUUID e) years'
+                    o = Occurrence Hebrew (eventTitle e) years'
                  in (fromHebrew hd', o)
-
-showUUID :: Event -> String
-showUUID e = case uuid e of
-                Nothing -> ""
-                Just u -> toString u
 
 #if TEST
 testSuite :: Test

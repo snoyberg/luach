@@ -4,96 +4,84 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
 module App
-    ( app
+    ( withLuach
     ) where
 
 import Yesod
 import Yesod.Helpers.Auth
 import Yesod.Helpers.Static
 import Yesod.Helpers.AtomFeed
-import Model hiding (uuid)
+import Model
 import Occurrence
-import Data.Object.Yaml
-import Data.Object
-import Control.Applicative
-import Data.Attempt
-import Control.Monad
-import Data.Typeable (Typeable)
-import Control.Exception (Exception)
-import Network.AWS.SimpleDB
-import qualified Data.UUID as UUID
-import Data.Time
-import Web.Encodings
+import qualified Settings
+import Settings (hamletFile, juliusFile, cassiusFile)
+import Database.Persist.GenericSql
+import StaticFiles
 
 data Luach = Luach
-    { dbInfo :: DBInfo
-    , rpxnowKey :: String
-    , theApproot :: String
-    , getStatic :: Static
+    { getStatic :: Static
+    , connPool :: Settings.ConnectionPool
     }
 type Handler = GHandler Luach Luach
-
-data InvalidLuach = InvalidLuach StringObject
-    deriving (Show, Typeable)
-instance Exception InvalidLuach
-
-mkLuach :: FromAttempt m
-        => StringObject
-        -> m Luach
-mkLuach o = fa $ do
-    m <- fromMapping o
-    Luach <$> (DBInfo
-                <$> (amazonSimpleDBConnection
-                        <$> lookupScalar "access-key" m
-                        <*> lookupScalar "secret-key" m
-                    )
-                <*> lookupScalar "domain" m
-              )
-              <*> lookupScalar "rpxnow-key" m
-              <*> lookupScalar "approot" m
 
 mkYesod "Luach" [$parseRoutes|
 / HomepageR GET
 /auth AuthR Auth getAuth
 /static StaticR Static getStatic
-/event EventrR GET PUT
+/event EventsR GET POST
 /event/#String EventR GET PUT DELETE
 /settings/feedid FeedIdR GET
 /feed/#String FeedR GET
 |]
-instance YesodApproot Luach where
-    approot = theApproot
+instance Yesod Luach where
+    approot _ = Settings.approot
 instance YesodAuth Luach where
-    rpxnowApiKey = Just . rpxnowKey
-instance YesodTemplate Luach where
-    getTemplateGroup = luachTG
+    type AuthEntity Luach = User
+    type AuthEmailEntity Luach = User -- ignored
 
-getHomepageR :: Handler ChooseRep
+    defaultDest _ = HomepageR
+
+    getAuthId creds _extra = runDB $ do
+        x <- getBy $ UniqueUser $ credsIdent creds
+        case x of
+            Just (uid, _) -> return $ Just uid
+            Nothing -> do
+                fmap Just $ insert $ User $ credsIdent creds
+
+    rpxnowSettings _ = Just $ RpxnowSettings "luach" "c8605aed1d6e38a58b180efd966bd7476b9a8e4c"
+instance YesodPersist Luach where
+    type YesodDB Luach = SqlPersist
+    runDB db = fmap connPool getYesod >>= Settings.runConnectionPool db
+
+getHomepageR :: Handler RepHtml
 getHomepageR = do
-    y <- getYesod
-    template "index" (cs "FIXME") $ \_ -> return
-        . setAttribute "approot" (toHtmlObject $ approot y)
+    pc <- widgetToPageContent $ do
+        addScriptRemote "http://cdn.jquerytools.org/1.1.1/full/jquery.tools.min.js"
+        addScriptRemote "http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"
+        addJavascript $(juliusFile "home")
+        addStylesheetRemote "http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.0/themes/start/jquery-ui.css"
+        addStyle $(cassiusFile "home")
+    hamletToRepHtml $(hamletFile "home")
 
-getEventsHelper :: String -> Handler JsonResponse
-getEventsHelper i = do
-    y <- getYesod
-    es <- liftIO $ getEvents (dbInfo y) i
+getEventsHelper :: (UserId, User) -> Handler RepJson
+getEventsHelper _i = do
+    _y <- getYesod
+    es <- error "liftIO $ getEvents (dbInfo y) i"
     os <- liftIO $ getOccurrencesIO es
-    return $ JsonResponse $ cs
-        [ ("events", Sequence $ map toHtmlObject es)
-        , ("upcoming", toHtmlObject os)
+    jsonToRepJson $ jsonMap
+        [ ("events", jsonList $ map eventToJson es)
+        , ("upcoming", occurrencesToJson os)
         ]
 
--- FIXME put into yesod
-newtype JsonResponse = JsonResponse HtmlObject
-instance HasReps JsonResponse where
-    chooseRep (JsonResponse ho) _ = return (TypeJson, cs $ unJsonDoc $ cs ho)
+getEventsR :: Handler RepJson
+getEventsR = requireAuth >>= getEventsHelper
 
-getEventsR :: Handler JsonResponse
-getEventsR = authIdentifier >>= getEventsHelper
-
-putEventHelper :: Maybe UUID.UUID -> Handler JsonResponse
+putEventHelper :: Maybe Int -> Handler RepJson
+putEventHelper = error "putEventHelper" {-
+putEventHelper :: Maybe UUID.UUID -> Handler RepJson
 putEventHelper uuid = do
     o <- authIdentifier
     (t, d, g, h, s) <- runFormPost $ (,,,,)
@@ -107,18 +95,18 @@ putEventHelper uuid = do
     let e = Event t d r s uuid o
     y <- getYesod
     liftIO $ putEvent (dbInfo y) e
-    getEventsHelper o
+    getEventsHelper o -}
 
-putEventsR :: Handler JsonResponse
-putEventsR = putEventHelper Nothing
+postEventsR :: Handler RepJson
+postEventsR = putEventHelper Nothing
 
-putEventR :: String -> Handler JsonResponse -- FIXME take a UUID
-putEventR uuid = do
+putEventR :: String -> Handler RepJson -- FIXME take a UUID
+putEventR = error "putEventR" {- do
     uuid' <- try $ UUID.fromString uuid
-    putEventHelper $ Just uuid'
+    putEventHelper $ Just uuid' -}
 
-deleteEventR :: String -> Handler JsonResponse
-deleteEventR uuid = do
+deleteEventR :: String -> Handler RepJson
+deleteEventR = error "deleteEventR" {- do
     y <- getYesod
     e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
@@ -127,10 +115,10 @@ deleteEventR uuid = do
     i <- authIdentifier
     unless (i == owner e) permissionDenied
     liftIO $ deleteEvent (dbInfo y) e
-    getEventsHelper i
+    getEventsHelper i -}
 
-getEventR :: String -> Handler Event
-getEventR uuid = do
+getEventR :: String -> Handler RepJson
+getEventR = error "getEventR" {- FIXME do
     y <- getYesod
     e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
@@ -138,13 +126,10 @@ getEventR uuid = do
             Just x -> return x
     i <- authIdentifier
     unless (i == owner e) permissionDenied
-    return e
-
-authIdentifier = do
-    (
+    return e -}
 
 getFeedIdR :: Handler RepJson
-getFeedIdR = do
+getFeedIdR = error "getFeedIdR" {- do
     i <- authIdentifier
     y <- getYesod
     forceReset <- runFormGet' $ boolInput "forceReset"
@@ -153,10 +138,10 @@ getFeedIdR = do
         [ ("feedId", jsonScalar feedId)
         , ("ident", jsonScalar i)
         , ("feedUrl", FeedR feedId)
-        ]
+        ] -}
 
 getFeedR :: String -> Handler RepAtom
-getFeedR feedId = do
+getFeedR _feedId = error "getFeedR" {- do
     y <- getYesod
     ident' <- liftIO $ checkFeedId (dbInfo y) feedId
     ident <- case ident' of
@@ -179,11 +164,14 @@ getFeedR feedId = do
                             $ Tag "ul" [] $ HtmlList $ map helper2 os -}
         helper2 :: Occurrence -> Html
         helper2 o = error "FIXME Tag \"li\" [] $ cs $ toHtmlObject o"
+-}
 
-readLuach :: IO Luach
-readLuach = do
-    so <- decodeFile "settings.yaml"
-    mkLuach so
-
-app :: IO Application
-app = readLuach >>= toWaiApp
+withLuach :: (Application -> IO a) -> IO a
+withLuach f = Settings.withConnectionPool $ \p -> do
+    flip Settings.runConnectionPool p $ runMigration $ do
+        migrate (undefined :: User)
+        migrate (undefined :: Event)
+    let h = Luach s p
+    toWaiApp h >>= f
+  where
+    s = fileLookupDir Settings.staticdir typeByExt
