@@ -5,6 +5,7 @@ module Occurrence
     ( Occurrence (..)
     , Occurrences
     , getOccurrencesIO
+    , prettyOccurrence
 #if TEST
     , getOccurrences
     , testSuite
@@ -17,8 +18,6 @@ import Data.Time.Calendar.Hebrew
 import Data.List
 import Data.Function
 import Data.UUID
-import Data.Object.Html
-import Data.Object.Text
 import Data.Time
 
 #if TEST
@@ -37,6 +36,7 @@ data Occurrence = Occurrence
 
 type Occurrences = [(Day, [Occurrence])]
 
+{-
 instance ConvertSuccess Occurrences HtmlObject where
     convertSuccess = Sequence . map helper where
         helper (d, o) = toHtmlObject
@@ -49,11 +49,11 @@ instance ConvertSuccess Occurrence HtmlObject where
         , ("years", show $ years o)
         , ("calendar", show $ calendarType o)
         ]
-instance ConvertSuccess Occurrence String where
-    convertSuccess o = otitle o ++ " - " ++ show (years o) ++ " on the " ++
+-}
+
+prettyOccurrence :: Occurrence -> String
+prettyOccurrence o = otitle o ++ " - " ++ show (years o) ++ " on the " ++
                        show (calendarType o) ++ " calendar"
-instance ConvertSuccess Occurrence Text where
-    convertSuccess = (cs :: String -> Text) . cs
 
 -- | Only does next 7 days.
 getOccurrencesIO :: [Event] -> IO [(Day, [Occurrence])]

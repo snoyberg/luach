@@ -15,24 +15,24 @@ import Yesod.Helpers.AtomFeed
 import Model hiding (uuid)
 import Occurrence
 import Data.Object.Yaml
+import Data.Object
 import Control.Applicative
 import Data.Attempt
 import Control.Monad
-import Data.Object.String
 import Data.Typeable (Typeable)
 import Control.Exception (Exception)
 import Network.AWS.SimpleDB
 import qualified Data.UUID as UUID
 import Data.Time
 import Web.Encodings
-import Data.Object.Json
 
 data Luach = Luach
     { dbInfo :: DBInfo
     , rpxnowKey :: String
     , theApproot :: String
-    , luachTG :: TemplateGroup
+    , getStatic :: Static
     }
+type Handler = GHandler Luach Luach
 
 data InvalidLuach = InvalidLuach StringObject
     deriving (Show, Typeable)
@@ -40,38 +40,27 @@ instance Exception InvalidLuach
 
 mkLuach :: FromAttempt m
         => StringObject
-        -> TemplateGroup
         -> m Luach
-mkLuach o tg = fa $ do
+mkLuach o = fa $ do
     m <- fromMapping o
     Luach <$> (DBInfo
                 <$> (amazonSimpleDBConnection
-                        <$> lookupObject "access-key" m
-                        <*> lookupObject "secret-key" m
+                        <$> lookupScalar "access-key" m
+                        <*> lookupScalar "secret-key" m
                     )
-                <*> lookupObject "domain" m
+                <*> lookupScalar "domain" m
               )
-              <*> lookupObject "rpxnow-key" m
-              <*> lookupObject "approot" m
-              <*> pure tg
+              <*> lookupScalar "rpxnow-key" m
+              <*> lookupScalar "approot" m
 
-instance Yesod Luach where
-    resources = [$mkResources|
-/:
-    Get: homepage
-/auth/*: authHandler
-/event:
-    Get: getEventsH
-    Put: putEventH
-/event/$uuid:
-    Get: getEventH
-    Put: updateEventH
-    Delete: deleteEventH
-/static/*filepath: serveStatic'
-/settings/feedid:
-    Get: getFeedIdH
-/feed/$feedId:
-    Get: getFeedH
+mkYesod "Luach" [$parseRoutes|
+/ HomepageR GET
+/auth AuthR Auth getAuth
+/static StaticR Static getStatic
+/event EventrR GET PUT
+/event/#String EventR GET PUT DELETE
+/settings/feedid FeedIdR GET
+/feed/#String FeedR GET
 |]
 instance YesodApproot Luach where
     approot = theApproot
@@ -80,13 +69,13 @@ instance YesodAuth Luach where
 instance YesodTemplate Luach where
     getTemplateGroup = luachTG
 
-homepage :: Handler Luach ChooseRep
-homepage = do
+getHomepageR :: Handler ChooseRep
+getHomepageR = do
     y <- getYesod
     template "index" (cs "FIXME") $ \_ -> return
         . setAttribute "approot" (toHtmlObject $ approot y)
 
-getEventsHelper :: String -> Handler Luach JsonResponse
+getEventsHelper :: String -> Handler JsonResponse
 getEventsHelper i = do
     y <- getYesod
     es <- liftIO $ getEvents (dbInfo y) i
@@ -101,10 +90,10 @@ newtype JsonResponse = JsonResponse HtmlObject
 instance HasReps JsonResponse where
     chooseRep (JsonResponse ho) _ = return (TypeJson, cs $ unJsonDoc $ cs ho)
 
-getEventsH :: Handler Luach JsonResponse
-getEventsH = authIdentifier >>= getEventsHelper
+getEventsR :: Handler JsonResponse
+getEventsR = authIdentifier >>= getEventsHelper
 
-putEventHelper :: Maybe UUID.UUID -> Handler Luach JsonResponse
+putEventHelper :: Maybe UUID.UUID -> Handler JsonResponse
 putEventHelper uuid = do
     o <- authIdentifier
     (t, d, g, h, s) <- runFormPost $ (,,,,)
@@ -120,16 +109,16 @@ putEventHelper uuid = do
     liftIO $ putEvent (dbInfo y) e
     getEventsHelper o
 
-putEventH :: Handler Luach JsonResponse
-putEventH = putEventHelper Nothing
+putEventsR :: Handler JsonResponse
+putEventsR = putEventHelper Nothing
 
-updateEventH :: String -> Handler Luach JsonResponse
-updateEventH uuid = do
+putEventR :: String -> Handler JsonResponse -- FIXME take a UUID
+putEventR uuid = do
     uuid' <- try $ UUID.fromString uuid
     putEventHelper $ Just uuid'
 
-deleteEventH :: String -> Handler Luach JsonResponse
-deleteEventH uuid = do
+deleteEventR :: String -> Handler JsonResponse
+deleteEventR uuid = do
     y <- getYesod
     e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
@@ -140,8 +129,8 @@ deleteEventH uuid = do
     liftIO $ deleteEvent (dbInfo y) e
     getEventsHelper i
 
-getEventH :: String -> Handler Luach Event
-getEventH uuid = do
+getEventR :: String -> Handler Event
+getEventR uuid = do
     y <- getYesod
     e' <- liftIO $ getEvent (dbInfo y) uuid
     e <- case e' of
@@ -151,23 +140,23 @@ getEventH uuid = do
     unless (i == owner e) permissionDenied
     return e
 
-getFeedIdH :: Handler Luach JsonResponse
-getFeedIdH = do
+authIdentifier = do
+    (
+
+getFeedIdR :: Handler RepJson
+getFeedIdR = do
     i <- authIdentifier
     y <- getYesod
-    rr <- getRawRequest
-    let forceReset = case getParams rr "forceReset" of
-                        [] -> False
-                        _ -> True
+    forceReset <- runFormGet' $ boolInput "forceReset"
     feedId <- liftIO $ getFeedId (dbInfo y) i forceReset
-    return $ JsonResponse $ toHtmlObject
-                [ ("feedId", feedId)
-                , ("ident", i)
-                , ("feedUrl", approot y ++ "feed/" ++ encodeUrl feedId ++ "/")
-                ]
+    return $ jsonMap
+        [ ("feedId", jsonScalar feedId)
+        , ("ident", jsonScalar i)
+        , ("feedUrl", FeedR feedId)
+        ]
 
-getFeedH :: String -> Handler Luach AtomFeedResponse
-getFeedH feedId = do
+getFeedR :: String -> Handler RepAtom
+getFeedR feedId = do
     y <- getYesod
     ident' <- liftIO $ checkFeedId (dbInfo y) feedId
     ident <- case ident' of
@@ -177,29 +166,24 @@ getFeedH feedId = do
     now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO es
     atomFeed $ AtomFeed "Your upcoming reminders"
-                        (RelLoc $ "feed/" ++ encodeUrl feedId ++ "/")
-                        (RelLoc "")
+                        (FeedR feedId)
+                        HomepageR
                         now
                         (map (helper now) os)
       where
         helper :: UTCTime -> (Day, [Occurrence]) -> AtomFeedEntry
-        helper now (d, os) = AtomFeedEntry
+        helper now (d, os) = error "FIXME" {-AtomFeedEntry
                             (RelLoc $ "#" ++ cs d)
                             now
                             ("Reminders for " ++ prettyDate d)
-                            $ Tag "ul" [] $ HtmlList $ map helper2 os
+                            $ Tag "ul" [] $ HtmlList $ map helper2 os -}
         helper2 :: Occurrence -> Html
-        helper2 o = Tag "li" [] $ cs $ toHtmlObject o
-
-serveStatic' :: Verb -> [String] -> Handler y [(ContentType, Content)]
-serveStatic' = serveStatic $ fileLookupDir "static"
+        helper2 o = error "FIXME Tag \"li\" [] $ cs $ toHtmlObject o"
 
 readLuach :: IO Luach
 readLuach = do
     so <- decodeFile "settings.yaml"
-    tg <- loadTemplateGroup "templates"
-    mkLuach so tg
-
+    mkLuach so
 
 app :: IO Application
 app = readLuach >>= toWaiApp

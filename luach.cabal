@@ -1,0 +1,25 @@
+Name:                       luach
+Build-type:                 Simple
+Version:                    0.1.0
+Cabal-Version:              >= 1.2
+
+Executable simple-server
+  Main-is:                  simple-server.hs
+  Build-depends:            base > 4 && < 5,
+                            yesod >= 0.5 && < 0.6,
+                            wai-extra,
+                            data-object >= 0.3.1.2 && < 0.4,
+                            data-object-json >= 0.3.1.1 && < 0.4,
+                            data-object-yaml >= 0.3.1 && < 0.4,
+                            web-encodings >= 0.3.0 && < 0.4,
+                            time,
+                            hebrew-time,
+                            uuid >= 1.2.1 && < 1.3,
+                            hSimpleDB >= 0.3 && < 0.4,
+                            attempt >= 0.3.0 && < 0.4,
+                            old-locale,
+                            predicates,
+                            convertible-text >= 0.3.0.1 && < 0.4,
+                            safe-failure >= 0.5 && < 0.6,
+                            random
+  ghc-options:              -O0 -Wall -Werror

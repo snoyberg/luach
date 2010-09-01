@@ -26,14 +26,14 @@ import Data.Convertible.Text
 import Control.Applicative
 import Data.Typeable (Typeable)
 import Control.Exception (Exception)
-import Yesod
+import Yesod hiding (select)
 import qualified Data.UUID as UUID
 import Data.Function.Predicate
 import Data.Maybe
 import Control.Monad (when)
 import Data.Time
 import System.Locale
-import Data.Object.Json
+import Web.Encodings
 
 type Domain = String
 data DBInfo = DBInfo AWSConnection Domain
@@ -54,6 +54,7 @@ prettyDate' = formatTime defaultTimeLocale "%b %e, %Y"
 prettyDate :: Day -> String
 prettyDate = formatTime defaultTimeLocale "%A %B %e, %Y"
 
+{-
 instance ConvertSuccess Event HtmlObject where
     convertSuccess e = cs
         [ ("title", toHtmlObject $ title e)
@@ -64,17 +65,21 @@ instance ConvertSuccess Event HtmlObject where
         , ("sunset", cs $ (cs :: Bool -> String) $ afterSunset e)
         , ("uuid", cs $ maybe "" UUID.toString $ Model.uuid e)
         ]
-instance HasReps Event where
-    chooseRep e _ = return (TypeJson, cs $ unJsonDoc $ cs $ toHtmlObject e)
+-}
+
+_eventToJson :: Event -> Json
+_eventToJson e = jsonMap
+    [ ("title", jsonScalar $ encodeHtml $ title e)
+    , ("rawtitle", jsonScalar $ title e)
+    , ("day", jsonScalar $ show $ day e)
+    , ("prettyday", jsonScalar $ prettyDate' $ day e)
+    , ("reminders", jsonList $ map (jsonScalar . show) $ reminders e)
+    , ("sunset", jsonScalar $ if afterSunset e then "true" else "false")
+    , ("uuid", jsonScalar $ maybe "" UUID.toString $ Model.uuid e)
+    ]
 
 data CalendarType = Gregorian | Hebrew
     deriving (Eq, Show, Read)
-instance ConvertAttempt String CalendarType where
-    convertAttempt = SF.read
-instance ConvertSuccess CalendarType String where
-    convertSuccess = show
-instance ConvertSuccess [CalendarType] HtmlObject where
-    convertSuccess = cs . map show
 
 instance ConvertSuccess Event (IO Item) where
     convertSuccess e = do
@@ -87,7 +92,7 @@ instance ConvertSuccess Event (IO Item) where
             , "title" := title e
             , "afterSunset" := cs (afterSunset e)
             , "owner" := owner e
-            ] ++ map (\x -> "reminders" := cs x) (reminders e)
+            ] ++ map (\x -> "reminders" := show x) (reminders e)
             ++ if afterSunset e then ["afterSunset" := "true"]
                                 else []
 
@@ -103,7 +108,7 @@ instance ConvertAttempt Item Event where
         let m = map (\(k := v) -> (k, v)) attrs
         d <- SF.lookup "day" m >>= ca
         t <- SF.lookup "title" m
-        r <- mapM (ca . snd) $ filter (fst `equals` "reminders") m
+        r <- mapM (SF.read . snd) $ filter (fst `equals` "reminders") m
         let s = fromMaybe False $ do
                     "true" <- lookup "afterSunset" m
                     return True
