@@ -23,6 +23,9 @@ import StaticFiles
 import Control.Applicative
 import Control.Monad
 import Web.Encodings
+import Yesod.Mail
+import System.Random
+import Data.Time
 
 data Luach = Luach
     { getStatic :: Static
@@ -39,6 +42,7 @@ mkYesod "Luach" [$parseRoutes|
 /event/#EventId/delete DeleteEventR POST
 /settings/feedid FeedIdR GET
 /feed/#String FeedR GET
+/day/#String DayR GET
 |]
 instance Yesod Luach where
     approot _ = Settings.approot
@@ -53,7 +57,9 @@ instance YesodAuth Luach where
         case x of
             Just (uid, _) -> return $ Just uid
             Nothing -> do
-                fmap Just $ insert $ User $ credsIdent creds
+                stdgen <- liftIO newStdGen
+                let fid' = fst $ randomString 10 stdgen
+                fmap Just $ insert $ User (credsIdent creds) fid'
 
     rpxnowSettings _ = Just $ RpxnowSettings "luach" "c8605aed1d6e38a58b180efd966bd7476b9a8e4c"
 instance YesodPersist Luach where
@@ -125,42 +131,49 @@ getEventR eid = do
     jsonToRepJson $ eventToJson render (eid, e)
 
 getFeedIdR :: Handler RepJson
-getFeedIdR = error "getFeedIdR" {- do
-    i <- authIdentifier
-    y <- getYesod
+getFeedIdR = do
+    (uid, u) <- requireAuth
     forceReset <- runFormGet' $ boolInput "forceReset"
-    feedId <- liftIO $ getFeedId (dbInfo y) i forceReset
-    return $ jsonMap
-        [ ("feedId", jsonScalar feedId)
-        , ("ident", jsonScalar i)
-        , ("feedUrl", FeedR feedId)
-        ] -}
+    fid <- if forceReset
+                then do
+                    stdgen <- liftIO newStdGen
+                    let fid' = fst $ randomString 10 stdgen
+                    runDB $ update uid [UserFeedId fid']
+                    return fid'
+                else return $ userFeedId u
+    render <- getUrlRender
+    jsonToRepJson $ jsonMap
+        [ ("feedUrl", jsonScalar $ render $ FeedR fid)
+        ]
 
 getFeedR :: String -> Handler RepAtom
-getFeedR _feedId = error "getFeedR" {- do
-    y <- getYesod
-    ident' <- liftIO $ checkFeedId (dbInfo y) feedId
-    ident <- case ident' of
-                Nothing -> notFound
-                Just x -> return x
-    es <- liftIO $ getEvents (dbInfo y) ident
+getFeedR fid = do
+    mu <- runDB $ getBy $ UniqueFeedId fid
+    (uid, _) <- maybe notFound return mu
+    es <- runDB $ selectList [EventUserEq uid] [] 0 0
     now <- liftIO getCurrentTime
-    os <- liftIO $ getOccurrencesIO es
-    atomFeed $ AtomFeed "Your upcoming reminders"
-                        (FeedR feedId)
-                        HomepageR
-                        now
-                        (map (helper now) os)
-      where
-        helper :: UTCTime -> (Day, [Occurrence]) -> AtomFeedEntry
-        helper now (d, os) = error "FIXME" {-AtomFeedEntry
-                            (RelLoc $ "#" ++ cs d)
-                            now
-                            ("Reminders for " ++ prettyDate d)
-                            $ Tag "ul" [] $ HtmlList $ map helper2 os -}
-        helper2 :: Occurrence -> Html
-        helper2 o = error "FIXME Tag \"li\" [] $ cs $ toHtmlObject o"
--}
+    os <- liftIO $ getOccurrencesIO $ map snd es
+    atomFeed $ AtomFeed
+        { atomTitle = "Your Luach Reminders"
+        , atomLinkSelf = FeedR fid
+        , atomLinkHome = HomepageR
+        , atomUpdated = now
+        , atomEntries = map (helper now) os
+        }
+  where
+     helper now (d, os) = AtomFeedEntry
+        { atomEntryLink = DayR $ show d
+        , atomEntryUpdated = now
+        , atomEntryTitle = "Luach reminders for " ++ prettyDate d
+        , atomEntryContent = [$hamlet|
+%ul
+    $forall os o
+        %li $otitle.o$ is $show.years.o$ years on the $show.calendarType.o$ calendar
+|] id
+        }
+
+getDayR :: String -> Handler ()
+getDayR _ = return ()
 
 withLuach :: (Application -> IO a) -> IO a
 withLuach f = Settings.withConnectionPool $ \p -> do

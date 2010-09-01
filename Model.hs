@@ -15,7 +15,9 @@ import System.Locale
 mkPersist [$persist|
 User
     ident String
+    feedId String update
     UniqueUser ident
+    UniqueFeedId feedId
 Event
     user UserId Eq
     title String Asc

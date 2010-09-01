@@ -157,11 +157,11 @@ function setupFeedLinks(o) {
   $("#feedlink").html("<a href='" + u + "'><img src='static/feed.png' alt='News feed'></a>");
   $("#feedurl").attr("value", u);
   $("#subscribelink").show();
-  var o = $("#subscribelink > a").overlay({
+  var ov = $("#subscribelink > a").overlay({
     api: true,
     expose: '#333'
   });
-  $("#subscribe > form").submit(function(){o.close()});
+  $("#subscribe > form").submit(function(){ov.close()});
 }
 
 function cancelNewEvent() {
