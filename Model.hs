@@ -11,16 +11,15 @@ import Yesod
 import Data.Time.Calendar
 import Data.Time
 import System.Locale
-import Web.Encodings
 
 mkPersist [$persist|
 User
     ident String
     UniqueUser ident
 Event
-    user UserId
-    title String
-    day Day
+    user UserId Eq
+    title String Asc
+    day Day Asc
     gregorian Bool
     hebrew Bool
     afterSunset Bool
@@ -44,15 +43,3 @@ instance ConvertSuccess Event HtmlObject where
         , ("uuid", cs $ maybe "" UUID.toString $ Model.uuid e)
         ]
 -}
-
-eventToJson :: Event -> Json
-eventToJson e = jsonMap
-    [ ("title", jsonScalar $ encodeHtml $ eventTitle e)
-    , ("rawtitle", jsonScalar $ eventTitle e)
-    , ("day", jsonScalar $ show $ eventDay e)
-    , ("prettyday", jsonScalar $ prettyDate' $ eventDay e)
-    , ("reminders", jsonList $
-        (if eventGregorian e then [jsonScalar "Gregorian"] else []) ++
-        (if eventHebrew e then [jsonScalar "Hebrew"] else []))
-    , ("sunset", jsonScalar $ if eventAfterSunset e then "true" else "false")
-    ]

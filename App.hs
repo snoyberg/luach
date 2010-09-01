@@ -20,6 +20,9 @@ import qualified Settings
 import Settings (hamletFile, juliusFile, cassiusFile)
 import Database.Persist.GenericSql
 import StaticFiles
+import Control.Applicative
+import Control.Monad
+import Web.Encodings
 
 data Luach = Luach
     { getStatic :: Static
@@ -32,7 +35,8 @@ mkYesod "Luach" [$parseRoutes|
 /auth AuthR Auth getAuth
 /static StaticR Static getStatic
 /event EventsR GET POST
-/event/#String EventR GET PUT DELETE
+/event/#EventId EventR GET POST
+/event/#EventId/delete DeleteEventR POST
 /settings/feedid FeedIdR GET
 /feed/#String FeedR GET
 |]
@@ -66,67 +70,59 @@ getHomepageR = do
         addStyle $(cassiusFile "home")
     hamletToRepHtml $(hamletFile "home")
 
-getEventsHelper :: (UserId, User) -> Handler RepJson
-getEventsHelper _i = do
-    _y <- getYesod
-    es <- error "liftIO $ getEvents (dbInfo y) i"
-    os <- liftIO $ getOccurrencesIO es
+getEventsHelper :: UserId -> Handler RepJson
+getEventsHelper uid = do
+    es <- runDB $ selectList [EventUserEq uid] [EventDayAsc, EventTitleAsc] 0 0
+    os <- liftIO $ getOccurrencesIO $ map snd es
+    render <- getUrlRender
     jsonToRepJson $ jsonMap
-        [ ("events", jsonList $ map eventToJson es)
+        [ ("events", jsonList $ map (eventToJson render) es)
         , ("upcoming", occurrencesToJson os)
         ]
 
 getEventsR :: Handler RepJson
-getEventsR = requireAuth >>= getEventsHelper
+getEventsR = requireAuthId >>= getEventsHelper
 
-putEventHelper :: Maybe Int -> Handler RepJson
-putEventHelper = error "putEventHelper" {-
-putEventHelper :: Maybe UUID.UUID -> Handler RepJson
-putEventHelper uuid = do
-    o <- authIdentifier
-    (t, d, g, h, s) <- runFormPost $ (,,,,)
-                        <$> notEmpty (required $ input "title")
-                        <*> checkDay (required $ input "day")
-                        <*> checkBool (input "remindGreg")
-                        <*> checkBool (input "remindHebrew")
-                        <*> checkBool (input "afterSunset")
-    let r = (if g then [Gregorian] else []) ++
-            (if h then [Hebrew] else [])
-    let e = Event t d r s uuid o
-    y <- getYesod
-    liftIO $ putEvent (dbInfo y) e
-    getEventsHelper o -}
+putEventHelper :: Maybe EventId -> Handler RepJson
+putEventHelper meid = do
+    uid <- requireAuthId
+    e <- runFormPost' $ Event
+            <$> pure uid
+            <*> stringInput "title"
+            <*> dayInput "day"
+            <*> boolInput "remindGreg"
+            <*> boolInput "remindHebrew"
+            <*> boolInput "afterSunset"
+    liftIO $ print e
+    rr <- getRequest
+    (pp, _) <- liftIO $ reqRequestBody rr
+    liftIO $ print pp
+    runDB $ case meid of
+        Nothing -> insert e >> return ()
+        Just eid -> replace eid e
+    getEventsHelper uid
 
 postEventsR :: Handler RepJson
 postEventsR = putEventHelper Nothing
 
-putEventR :: String -> Handler RepJson -- FIXME take a UUID
-putEventR = error "putEventR" {- do
-    uuid' <- try $ UUID.fromString uuid
-    putEventHelper $ Just uuid' -}
+postEventR :: EventId -> Handler RepJson
+postEventR = putEventHelper . Just
 
-deleteEventR :: String -> Handler RepJson
-deleteEventR = error "deleteEventR" {- do
-    y <- getYesod
-    e' <- liftIO $ getEvent (dbInfo y) uuid
-    e <- case e' of
-            Nothing -> notFound
-            Just x -> return x
-    i <- authIdentifier
-    unless (i == owner e) permissionDenied
-    liftIO $ deleteEvent (dbInfo y) e
-    getEventsHelper i -}
+postDeleteEventR :: EventId -> Handler RepJson
+postDeleteEventR eid = do
+    uid <- requireAuthId
+    e <- runDB $ get404 eid
+    unless (uid == eventUser e) notFound
+    runDB $ delete eid
+    getEventsHelper uid
 
-getEventR :: String -> Handler RepJson
-getEventR = error "getEventR" {- FIXME do
-    y <- getYesod
-    e' <- liftIO $ getEvent (dbInfo y) uuid
-    e <- case e' of
-            Nothing -> notFound
-            Just x -> return x
-    i <- authIdentifier
-    unless (i == owner e) permissionDenied
-    return e -}
+getEventR :: EventId -> Handler RepJson
+getEventR eid = do
+    uid <- requireAuthId
+    e <- runDB $ get404 eid
+    unless (uid == eventUser e) notFound
+    render <- getUrlRender
+    jsonToRepJson $ eventToJson render (eid, e)
 
 getFeedIdR :: Handler RepJson
 getFeedIdR = error "getFeedIdR" {- do
@@ -175,3 +171,17 @@ withLuach f = Settings.withConnectionPool $ \p -> do
     toWaiApp h >>= f
   where
     s = fileLookupDir Settings.staticdir typeByExt
+
+eventToJson :: (LuachRoute -> String) -> (EventId, Event) -> Json
+eventToJson render (eid, e) = jsonMap
+    [ ("title", jsonScalar $ encodeHtml $ eventTitle e)
+    , ("rawtitle", jsonScalar $ eventTitle e)
+    , ("day", jsonScalar $ show $ eventDay e)
+    , ("prettyday", jsonScalar $ prettyDate' $ eventDay e)
+    , ("reminders", jsonList $
+        (if eventGregorian e then [jsonScalar "Gregorian"] else []) ++
+        (if eventHebrew e then [jsonScalar "Hebrew"] else []))
+    , ("sunset", jsonScalar $ if eventAfterSunset e then "true" else "false")
+    , ("updateUrl", jsonScalar $ render $ EventR eid)
+    , ("deleteUrl", jsonScalar $ render $ DeleteEventR eid)
+    ]

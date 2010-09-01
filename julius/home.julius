@@ -23,7 +23,7 @@ $(function(){
     }
   });
   $.getJSON("@AuthR.CheckR@", function(o){
-    if (o.logged_in) {
+    if (o.logged_in == "true") {
       $.getJSON("event/", showEvents);
       $.getJSON("settings/feedid/", setupFeedLinks);
       $("#interface").show();
@@ -61,8 +61,8 @@ function showEvents(o) {
       h.push(e.prettyday);
       h.push("</td>");
       h.push("<td width='40px' class='controls'>");
-      h.push("<a class='edit-button' rel='" + i + "' href='event/" + e.uuid + "/?_method_override=put'><img src='static/edit.png' alt='Edit' title='Edit this event'></a>");
-      h.push("<a class='delete-button' href='event/" + e.uuid + "/?_method_override=delete'><img src='static/delete.png' alt='Delete' title='Delete this event'></a>");
+      h.push("<a class='edit-button' rel='" + i + "' href='" + e.updateUrl + "'><img src='static/edit.png' alt='Edit' title='Edit this event'></a>");
+      h.push("<a class='delete-button' href='" + e.deleteUrl + "'><img src='static/delete.png' alt='Delete' title='Delete this event'></a>");
       h.push("</td>");
       h.push("</tr>");
     });
