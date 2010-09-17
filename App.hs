@@ -146,8 +146,8 @@ getEventR eid = do
     unless (uid == eventUser e) notFound
     (res, wform, enctype) <- runFormPost $ eventFormlets uid $ Just e
     case res of
-        FormSuccess e -> do
-            runDB $ replace eid e
+        FormSuccess e' -> do
+            runDB $ replace eid e'
             setMessage "Event updated"
             redirect RedirectTemporary EventsR
         _ -> return ()

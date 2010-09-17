@@ -38,6 +38,7 @@ data Occurrence = Occurrence
     }
     deriving (Show, Eq)
 
+showCT :: CalendarType -> String
 showCT Hebrew = "Hebrew"
 showCT Gregorian = "English"
 
