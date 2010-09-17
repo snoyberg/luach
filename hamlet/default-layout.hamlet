@@ -1,0 +1,11 @@
+!!!
+%html
+    %head
+        %title $pageTitle.pc$ - Luach
+        ^pageHead.pc^
+        %link!rel=icon!href=@StaticR.favicon_ico@
+    %body
+        $maybe mmsg msg
+            %p.message $msg$
+        %h1 Luach
+        ^pageBody.pc^

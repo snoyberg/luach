@@ -1,0 +1,36 @@
+body {
+  background: url(luach.png) no-repeat 5px 5px;
+}
+
+#wrapper {
+  width: 840px;
+  margin: 2em auto;
+  border: 5px groove #baaa5a;
+}
+
+#info {
+  width: 378px;
+  float: left;
+  text-align: justify;
+  margin: 0 10px;
+  padding: 0 10px;
+}
+
+#login {
+  width: 398px;
+  float: left;
+  margin: 0 10px;
+  border-left: 4px groove #baaa5a;
+}
+
+h1 {
+  text-align: center;
+}
+
+#footer {
+  text-align: center;
+}
+
+#footer a, #footer a:visited {
+  color: blue;
+}

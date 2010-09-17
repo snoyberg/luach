@@ -1,0 +1,23 @@
+!!!
+%html
+    %head
+        %title Luach by Yesod Web Development
+        %meta!name=description!content="Get birthday and anniversary reminders on the Hebrew and English calendars"
+        %link!rel=stylesheet!href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
+        %link!rel=stylesheet!href=@StaticR.homepage_css@
+        %link!rel=icon!href=@StaticR.favicon_ico@
+    %body
+        #wrapper.ui-widget.ui-widget-content.ui-helper-clearfix
+            #info
+                %h1 Luach
+                %p Create alerts for birthdays and anniversaries on both the English and Hebrew calendars. It's easy to get started, no account setup required!
+                %p
+                    This free service is provided by $
+                    %a!href="http://www.yesodweb.com/" Yesod Web Development
+                    \.
+            #login
+                %h1 Login
+                %iframe!src="http://luach.rpxnow.com/openid/embed?token_url=@AuthR.RpxnowR@"!scrolling="no"!frameBorder="no"!allowtransparency="true"!style="width:400px;height:240px"
+        #footer
+            Powered by $
+            %a!href="http://docs.yesodweb.com/" Yesod Web Framework

@@ -1,0 +1,54 @@
+%p
+    %a!href=@AuthR.LogoutR@ Logout
+    \ $
+    %a!href=@FeedR.userFeedId.user@
+        %img!src=@StaticR.feed_png@!alt="News feed"
+%h2 Add Event
+%form!method=post!enctype=$enctype$
+    %table
+        ^form^
+        %tr
+            %td!colspan=2
+                %input!type=submit!value="Add Event"
+$if not.null.os
+    %h2 Upcoming Events
+    %dl
+        $forall os op
+            $forall snd.op o
+                %dt $show.fst.op$
+                %dd
+                    $otitle.o$ &mdash; $show.years.o$ year
+                    $if notOne.years.o
+                        s
+                    \ on the $show.calendarType.o$ calendar
+$if null.es
+    %p You have not yet entered any events.
+$else
+    %h2 All Events
+    %table
+        %thead
+            %tr
+                %th Event
+                %th Date
+                %th English?
+                %th Hebrew?
+                %th After sunset?
+        %tbody
+            $forall es e
+                %tr
+                    %td $eventTitle.snd.e$
+                    %td $show.eventDay.snd.e$
+                    %td
+                        $if eventGregorian.snd.e
+                            Yes
+                    %td
+                        $if eventHebrew.snd.e
+                            Yes
+                    %td
+                        $if eventAfterSunset.snd.e
+                            Yes
+                    %td
+                        %a.edit-event!href=@EventR.fst.e@ Edit
+                    %td
+                        %form!method=post!action=@DeleteEventR.fst.e@
+                            %input!type=submit!value=Delete

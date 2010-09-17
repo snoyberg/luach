@@ -6,6 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 module App
     ( withLuach
     ) where
@@ -14,6 +15,7 @@ import Yesod
 import Yesod.Helpers.Auth
 import Yesod.Helpers.Static
 import Yesod.Helpers.AtomFeed
+import Yesod.Form.Jquery
 import Model
 import Occurrence
 import qualified Settings
@@ -34,7 +36,10 @@ data Luach = Luach
 type Handler = GHandler Luach Luach
 
 mkYesod "Luach" [$parseRoutes|
-/ HomepageR GET
+/favicon.ico FaviconR GET
+/robots.txt RobotsR GET
+
+/ RootR GET
 /auth AuthR Auth getAuth
 /static StaticR Static getStatic
 /event EventsR GET POST
@@ -46,11 +51,16 @@ mkYesod "Luach" [$parseRoutes|
 |]
 instance Yesod Luach where
     approot _ = Settings.approot
+    defaultLayout w = do
+        mmsg <- getMessage
+        pc <- widgetToPageContent w
+        hamletToRepHtml $(Settings.hamletFile "default-layout")
+    authRoute _ = Just RootR
 instance YesodAuth Luach where
     type AuthEntity Luach = User
     type AuthEmailEntity Luach = User -- ignored
 
-    defaultDest _ = HomepageR
+    defaultDest _ = EventsR
 
     getAuthId creds _extra = runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
@@ -65,70 +75,93 @@ instance YesodAuth Luach where
 instance YesodPersist Luach where
     type YesodDB Luach = SqlPersist
     runDB db = fmap connPool getYesod >>= Settings.runConnectionPool db
+instance YesodJquery Luach where
+    urlJqueryUiCss _ = Right "http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
 
-getHomepageR :: Handler RepHtml
-getHomepageR = do
-    pc <- widgetToPageContent $ do
-        addScriptRemote "http://cdn.jquerytools.org/1.1.1/full/jquery.tools.min.js"
-        addScriptRemote "http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js"
-        addJavascript $(juliusFile "home")
-        addStylesheetRemote "http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.0/themes/start/jquery-ui.css"
-        addStyle $(cassiusFile "home")
-    hamletToRepHtml $(hamletFile "home")
+getFaviconR :: Handler ()
+getFaviconR = sendFile "image/x-icon" "static/favicon.ico"
 
-getEventsHelper :: UserId -> Handler RepJson
-getEventsHelper uid = do
+getRobotsR :: Handler RepPlain
+getRobotsR = return $ RepPlain $ toContent ("" :: String)
+
+getRootR :: Handler RepHtml
+getRootR = do
+    x <- maybeAuthId
+    case x of
+        Nothing -> hamletToRepHtml $(hamletFile "homepage")
+        Just _ -> redirect RedirectTemporary EventsR
+
+getEventsR :: Handler RepHtmlJson
+getEventsR = do
+    (uid, user) <- requireAuth
     es <- runDB $ selectList [EventUserEq uid] [EventDayAsc, EventTitleAsc] 0 0
     os <- liftIO $ getOccurrencesIO $ map snd es
     render <- getUrlRender
-    jsonToRepJson $ jsonMap
-        [ ("events", jsonList $ map (eventToJson render) es)
-        , ("upcoming", occurrencesToJson os)
-        ]
+    let json = jsonMap
+            [ ("events", jsonList $ map (eventToJson render) es)
+            , ("upcoming", occurrencesToJson os)
+            ]
+    (_, wform, enctype) <- runFormGet $ eventFormlets uid Nothing
+    let html = do
+            setTitle "Events"
+            form <- extractBody wform
+            addBody $(hamletFile "events")
+    defaultLayoutJson html json
+  where
+    notOne 1 = False
+    notOne _ = True
 
-getEventsR :: Handler RepJson
-getEventsR = requireAuthId >>= getEventsHelper
-
-putEventHelper :: Maybe EventId -> Handler RepJson
-putEventHelper meid = do
+postEventsR :: Handler RepHtml
+postEventsR = do
     uid <- requireAuthId
-    e <- runFormPost' $ Event
-            <$> pure uid
-            <*> stringInput "title"
-            <*> dayInput "day"
-            <*> boolInput "remindGreg"
-            <*> boolInput "remindHebrew"
-            <*> boolInput "afterSunset"
-    liftIO $ print e
-    rr <- getRequest
-    (pp, _) <- liftIO $ reqRequestBody rr
-    liftIO $ print pp
-    runDB $ case meid of
-        Nothing -> insert e >> return ()
-        Just eid -> replace eid e
-    getEventsHelper uid
+    (res, wform, enctype) <- runFormPost $ eventFormlets uid Nothing
+    case res of
+        FormSuccess e -> do
+            _ <- runDB $ insert e
+            setMessage "New event created"
+            redirect RedirectTemporary EventsR
+        _ -> defaultLayout $ do
+            setTitle "Add Event"
+            form <- extractBody wform
+            addBody $(hamletFile "post-events")
 
-postEventsR :: Handler RepJson
-postEventsR = putEventHelper Nothing
+eventFormlets :: UserId -> Formlet s Luach Event
+eventFormlets uid e = fieldsToTable $ Event
+    <$> pure uid
+    <*> stringField "Title" (eventTitle <$> e)
+    <*> jqueryDayField "Date" (eventDay <$> e)
+    <*> boolField "English" (eventGregorian <$> e)
+    <*> boolField "Hebrew" (eventHebrew <$> e)
+    <*> boolField "After sunset" (eventAfterSunset <$> e)
 
-postEventR :: EventId -> Handler RepJson
-postEventR = putEventHelper . Just
+getEventR :: EventId -> Handler RepHtml
+getEventR eid = do
+    uid <- requireAuthId
+    e <- runDB $ get404 eid
+    unless (uid == eventUser e) notFound
+    (res, wform, enctype) <- runFormPost $ eventFormlets uid $ Just e
+    case res of
+        FormSuccess e -> do
+            runDB $ replace eid e
+            setMessage "Event updated"
+            redirect RedirectTemporary EventsR
+        _ -> return ()
+    defaultLayout $ do
+        setTitle "Edit Event"
+        form <- extractBody wform
+        addBody $(hamletFile "edit-event")
 
-postDeleteEventR :: EventId -> Handler RepJson
+postEventR :: EventId -> Handler RepHtml
+postEventR = getEventR
+
+postDeleteEventR :: EventId -> Handler ()
 postDeleteEventR eid = do
     uid <- requireAuthId
     e <- runDB $ get404 eid
     unless (uid == eventUser e) notFound
     runDB $ delete eid
-    getEventsHelper uid
-
-getEventR :: EventId -> Handler RepJson
-getEventR eid = do
-    uid <- requireAuthId
-    e <- runDB $ get404 eid
-    unless (uid == eventUser e) notFound
-    render <- getUrlRender
-    jsonToRepJson $ eventToJson render (eid, e)
+    setMessage "The event has been deleted"
+    redirect RedirectTemporary RootR
 
 getFeedIdR :: Handler RepJson
 getFeedIdR = do
@@ -156,7 +189,7 @@ getFeedR fid = do
     atomFeed $ AtomFeed
         { atomTitle = "Your Luach Reminders"
         , atomLinkSelf = FeedR fid
-        , atomLinkHome = HomepageR
+        , atomLinkHome = RootR
         , atomUpdated = now
         , atomEntries = map (helper now) os
         }
@@ -173,7 +206,7 @@ getFeedR fid = do
         }
 
 getDayR :: String -> Handler ()
-getDayR _ = return ()
+getDayR _ = redirect RedirectTemporary EventsR
 
 withLuach :: (Application -> IO a) -> IO a
 withLuach f = Settings.withConnectionPool $ \p -> do
