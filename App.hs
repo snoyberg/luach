@@ -28,6 +28,7 @@ import Web.Encodings
 import Yesod.Mail
 import System.Random
 import Data.Time
+import System.Locale
 
 data Luach = Luach
     { getStatic :: Static
@@ -53,7 +54,9 @@ instance Yesod Luach where
     approot _ = Settings.approot
     defaultLayout w = do
         mmsg <- getMessage
-        pc <- widgetToPageContent w
+        pc <- widgetToPageContent $ do
+            w
+            addStyle $(cassiusFile "default-layout")
         hamletToRepHtml $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
 instance YesodAuth Luach where
@@ -106,6 +109,8 @@ getEventsR = do
             setTitle "Events"
             form <- extractBody wform
             addBody $(hamletFile "events")
+            addStyle $(cassiusFile "events")
+            addJavascript $(juliusFile "events")
     defaultLayoutJson html json
   where
     notOne 1 = False
@@ -231,3 +236,6 @@ eventToJson render (eid, e) = jsonMap
     , ("updateUrl", jsonScalar $ render $ EventR eid)
     , ("deleteUrl", jsonScalar $ render $ DeleteEventR eid)
     ]
+
+showDay :: Day -> String
+showDay = formatTime defaultTimeLocale "%B %e, %Y"

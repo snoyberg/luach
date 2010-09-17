@@ -7,6 +7,7 @@ module Occurrence
     , getOccurrencesIO
     , prettyOccurrence
     , occurrencesToJson
+    , showCT
 #if TEST
     , getOccurrences
     , testSuite
@@ -36,6 +37,9 @@ data Occurrence = Occurrence
     , years :: Integer
     }
     deriving (Show, Eq)
+
+showCT Hebrew = "Hebrew"
+showCT Gregorian = "English"
 
 type Occurrences = [(Day, [Occurrence])]
 

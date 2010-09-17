@@ -1,0 +1,12 @@
+$(function(){
+    $("#add-event").hide().before("<button id='add-event-button'>Add Event</button>").dialog({autoOpen: false, width: 400});
+    $("input[type=submit], button").filter(".smaller").css("font-size", "60%%").end().button();
+    $("#add-event-button").click(function(){
+        $("#add-event").dialog('open');
+    });
+    $(".delete").click(function(){
+        return confirm("Really delete this event?");
+    });
+    $("tr:even").addClass("even");
+    $("tr:odd").addClass("odd");
+});

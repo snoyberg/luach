@@ -1,29 +1,42 @@
-%p
-    %a!href=@AuthR.LogoutR@ Logout
-    \ $
-    %a!href=@FeedR.userFeedId.user@
-        %img!src=@StaticR.feed_png@!alt="News feed"
-%h2 Add Event
-%form!method=post!enctype=$enctype$
-    %table
-        ^form^
-        %tr
-            %td!colspan=2
-                %input!type=submit!value="Add Event"
+#user-bar
+    #logout
+        %a!href=@AuthR.LogoutR@ Logout
+    %form#fmi!action="http://www.feedmyinbox.com/feeds/verify/"!method="post"!target="fmi"!onsubmit="window.open('http://www.feedmyinbox.com/', 'fmi', 'scrollbars=yes,width=500,height=490');return true;"
+        %label!for=subscribe-email Email:
+        \ $
+        %input#subscribe-email!type=text!name=email
+        \ $
+        %input!type=hidden!name=feed!value=@FeedR.userFeedId.user@
+        %input.smaller!type=submit!value="Get updates by email"
+        %a!href=@FeedR.userFeedId.user@
+            %img#feedicon!src=@StaticR.feed_png@!alt="News feed"
+%h1
+    Luach
 $if not.null.os
+  #upcoming.ui-widget.ui-widget-content
     %h2 Upcoming Events
     %dl
         $forall os op
             $forall snd.op o
-                %dt $show.fst.op$
+                %dt
+                    .ui-icon.ui-icon-pin-s!style="float:left;margin-right:3px"
+                    $showDay.fst.op$
                 %dd
                     $otitle.o$ &mdash; $show.years.o$ year
                     $if notOne.years.o
                         s
-                    \ on the $show.calendarType.o$ calendar
+                    \ on the $showCT.calendarType.o$ calendar
+#add-event!title="Add Event"
+    %form!method=post!enctype=$enctype$
+        %table
+            ^form^
+            %tr
+                %td!colspan=2
+                    %input!type=submit!value="Add Event"
 $if null.es
     %p You have not yet entered any events.
 $else
+  #all-events.ui-widget.ui-widget-content
     %h2 All Events
     %table
         %thead
@@ -33,22 +46,25 @@ $else
                 %th English?
                 %th Hebrew?
                 %th After sunset?
+                %th Edit
+                %th Delete
         %tbody
             $forall es e
                 %tr
-                    %td $eventTitle.snd.e$
-                    %td $show.eventDay.snd.e$
+                    %td.title $eventTitle.snd.e$
+                    %td $showDay.eventDay.snd.e$
                     %td
                         $if eventGregorian.snd.e
-                            Yes
+                            %img!src=@StaticR.checkmark_png@!alt=Yes
                     %td
                         $if eventHebrew.snd.e
-                            Yes
+                            %img!src=@StaticR.checkmark_png@!alt=Yes
                     %td
                         $if eventAfterSunset.snd.e
-                            Yes
+                            %img!src=@StaticR.checkmark_png@!alt=Yes
                     %td
-                        %a.edit-event!href=@EventR.fst.e@ Edit
+                        %form!action=@EventR.fst.e@
+                            %input.smaller!type=submit!value=Edit
                     %td
                         %form!method=post!action=@DeleteEventR.fst.e@
-                            %input!type=submit!value=Delete
+                            %input.smaller.delete!type=submit!value=Delete

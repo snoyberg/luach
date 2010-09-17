@@ -1,0 +1,45 @@
+a, a:visited
+    color: blue
+    text-decoration: none
+a:hover
+    text-decoration: underline
+#user-bar
+    float: right
+#feedicon
+    vertical-align: bottom
+    margin-left: 4px
+    border: 0
+h2
+    text-align: center
+table
+    border-collapse: collapse
+    width: 100%
+th, td
+    border: 1px solid #baaa5a
+    padding: 2px
+    color: #000
+    font-size: 0.8em
+td.title
+    font-weight: bold
+tr.even td
+    background-color: #dee
+tr.odd td
+    background-color: #eed
+th
+    background-color: #eee
+h1
+    background: url(@StaticR.luach_small_png@) no-repeat
+    padding-left: 34px
+    line-height: 50px
+#logout
+    text-align: right
+#upcoming, #all-events
+    border: 5px groove #baaa5a;
+    padding: 10px
+#upcoming h2, #all-events h2
+    margin: 0
+#upcoming dl
+    margin: 0
+#add-event-button
+    display: block
+    margin: 5px auto

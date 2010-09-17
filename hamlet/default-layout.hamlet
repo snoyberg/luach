@@ -5,7 +5,8 @@
         ^pageHead.pc^
         %link!rel=icon!href=@StaticR.favicon_ico@
     %body
-        $maybe mmsg msg
-            %p.message $msg$
-        %h1 Luach
-        ^pageBody.pc^
+        #wrapper
+            $maybe mmsg msg
+                %span.ui-icon.ui-icon-info!style="float:left;margin-right:5px"
+                %p.ui-state-highlight $msg$
+            ^pageBody.pc^
