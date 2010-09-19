@@ -23,7 +23,21 @@ $(function(){
         $("#add-event").dialog('open');
     });
     $("input.delete").click(function(){
-        return confirm("Really delete this event?");
+        var form = $(this).closest("form");
+        $("#really-delete").detach();
+        $("body").append("<div id='really-delete' title='Really Delete?'>Really delete this event?</div>");
+        $("#really-delete").dialog({
+            modal: true,
+            buttons: {
+                "Delete": function() {
+                    form.submit();
+                },
+                "Cancel": function() {
+                    $(this).dialog('close');
+                }
+            }
+        });
+        return false;
     });
     $("body").append("<div id='edit-dialog' title='Edit Event'></div>");
     $("#edit-dialog").dialog(ds);
