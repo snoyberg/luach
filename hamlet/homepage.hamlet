@@ -1,11 +1,10 @@
 !!!
 %html
     %head
-        %title Luach by Yesod Web Development
+        %title $pageTitle.pc$
         %meta!name=description!content="Get birthday and anniversary reminders on the Hebrew and English calendars"
-        %link!rel=stylesheet!href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
-        %link!rel=stylesheet!href=@StaticR.homepage_css@
         %link!rel=icon!href=@StaticR.favicon_ico@
+        ^pageHead.pc^
     %body
         #wrapper.ui-widget.ui-widget-content.ui-helper-clearfix
             #info

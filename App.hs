@@ -61,6 +61,7 @@ instance Yesod Luach where
             addScriptEither $ urlJqueryJs y
             addScriptEither $ urlJqueryUiJs y
             addStylesheetEither $ urlJqueryUiCss y
+            addJavascript $(juliusFile "analytics")
             addStyle $(cassiusFile "default-layout")
         hamletToRepHtml $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
@@ -96,7 +97,14 @@ getRootR :: Handler RepHtml
 getRootR = do
     x <- maybeAuthId
     case x of
-        Nothing -> hamletToRepHtml $(hamletFile "homepage")
+        Nothing -> do
+            y <- getYesod
+            pc <- widgetToPageContent $ do
+                setTitle "Luach by Yesod Web Development"
+                addStylesheet $ StaticR homepage_css
+                addStylesheetEither $ urlJqueryUiCss y
+                addJavascript $(juliusFile "analytics")
+            hamletToRepHtml $(hamletFile "homepage")
         Just _ -> redirect RedirectTemporary EventsR
 
 getEventsR :: Handler RepHtmlJson
