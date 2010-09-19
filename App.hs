@@ -254,5 +254,12 @@ eventToJson render (eid, e) = jsonMap
 showDay :: Day -> String
 showDay = formatTime defaultTimeLocale "%B %e, %Y"
 
+showHDay :: Event -> String
+showHDay e =
+    show $ toHebrew $ f (eventDay e) $ eventAfterSunset e
+  where
+    f d False = d
+    f d True = addDays 1 d
+
 addthis :: Hamlet LuachRoute
 addthis = $(hamletFile "add-this")

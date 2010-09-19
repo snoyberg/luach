@@ -56,7 +56,7 @@ $else
                     %td
                         $showDay.eventDay.snd.e$
                         %br
-                        $show.toHebrew.eventDay.snd.e$
+                        $showHDay.snd.e$
                     %td
                         $if eventGregorian.snd.e
                             %img!src=@StaticR.checkmark_png@!alt=Yes
