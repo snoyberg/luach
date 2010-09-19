@@ -14,6 +14,7 @@
                     This free service is provided by $
                     %a!href="http://www.yesodweb.com/" Yesod Web Development
                     \.
+                ^addthis^
             #login
                 %h1 Login
                 %iframe!src="http://luach.rpxnow.com/openid/embed?token_url=@AuthR.RpxnowR@"!scrolling="no"!frameBorder="no"!allowtransparency="true"!style="width:400px;height:240px"

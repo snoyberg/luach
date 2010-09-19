@@ -10,6 +10,7 @@
         %input.smaller!type=submit!value="Get updates by email"
         %a!href=@FeedR.userFeedId.user@
             %img#feedicon!src=@StaticR.feed_png@!alt="News feed"
+    ^addthis^
 %h1
     Luach
 $if not.null.os
