@@ -14,7 +14,7 @@ h2
 table
     border-collapse: collapse
     width: 100%
-th, td
+#all-events th, #all-events td
     border: 1px solid #baaa5a
     padding: 2px
     color: #000
@@ -25,12 +25,14 @@ tr.even td
     background-color: #dee
 tr.odd td
     background-color: #eed
-th
+#all-events th
     background-color: #eee
 h1
     background: url(@StaticR.luach_small_png@) no-repeat
     padding-left: 34px
     line-height: 50px
+    font-size: 50px
+    color: #261803
 #logout
     text-align: right
 #upcoming, #all-events
@@ -43,3 +45,8 @@ h1
 #add-event-button
     display: block
     margin: 5px auto
+#footer
+    text-align: center
+    margin-top: 2em
+.ui-datepicker
+    z-index: 9999 !important

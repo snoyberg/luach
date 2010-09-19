@@ -1,9 +1,9 @@
 %h2 Edit Event
-%form!method=post!enctype=$enctype$
+%form!method=post!enctype=$enctype$!action=@EventR.eid@
     %table
         ^form^
         %tr
             %td!colspan=2
                 %input!type=submit!value="Update Event"
                 \ $
-                %a!href=@EventsR@ Cancel
+                %a.cancel!href=@EventsR@ Cancel

@@ -52,7 +52,10 @@ $else
             $forall es e
                 %tr
                     %td.title $eventTitle.snd.e$
-                    %td $showDay.eventDay.snd.e$
+                    %td
+                        $showDay.eventDay.snd.e$
+                        %br
+                        $show.toHebrew.eventDay.snd.e$
                     %td
                         $if eventGregorian.snd.e
                             %img!src=@StaticR.checkmark_png@!alt=Yes
@@ -64,7 +67,13 @@ $else
                             %img!src=@StaticR.checkmark_png@!alt=Yes
                     %td
                         %form!action=@EventR.fst.e@
-                            %input.smaller!type=submit!value=Edit
+                            %input.smaller.edit!type=submit!value=Edit
                     %td
                         %form!method=post!action=@DeleteEventR.fst.e@
                             %input.smaller.delete!type=submit!value=Delete
+#footer
+    This free service is provided by $
+    %a!href="http://www.yesodweb.com/" Yesod Web Development
+    %br
+    Powered by $
+    %a!href="http://docs.yesodweb.com/" Yesod Web Framework

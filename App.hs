@@ -29,6 +29,7 @@ import Yesod.Mail
 import System.Random
 import Data.Time
 import System.Locale
+import Data.Time.Calendar.Hebrew (toHebrew)
 
 data Luach = Luach
     { getStatic :: Static
@@ -53,9 +54,13 @@ mkYesod "Luach" [$parseRoutes|
 instance Yesod Luach where
     approot _ = Settings.approot
     defaultLayout w = do
+        y <- getYesod
         mmsg <- getMessage
         pc <- widgetToPageContent $ do
             w
+            addScriptEither $ urlJqueryJs y
+            addScriptEither $ urlJqueryUiJs y
+            addStylesheetEither $ urlJqueryUiCss y
             addStyle $(cassiusFile "default-layout")
         hamletToRepHtml $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
@@ -134,7 +139,7 @@ eventFormlets :: UserId -> Formlet s Luach Event
 eventFormlets uid e = fieldsToTable $ Event
     <$> pure uid
     <*> stringField "Title" (eventTitle <$> e)
-    <*> jqueryDayField "Date" (eventDay <$> e)
+    <*> dayField "Date" (eventDay <$> e)
     <*> boolField "English" (eventGregorian <$> e)
     <*> boolField "Hebrew" (eventHebrew <$> e)
     <*> boolField "After sunset" (eventAfterSunset <$> e)
@@ -151,6 +156,7 @@ getEventR eid = do
             setMessage "Event updated"
             redirect RedirectTemporary EventsR
         _ -> return ()
+    y <- getYesod
     defaultLayout $ do
         setTitle "Edit Event"
         form <- extractBody wform

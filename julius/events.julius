@@ -1,12 +1,40 @@
+function dp(id) {
+    $("#" + id + " input[type=date]").after("<div class='datepicker-div'></div>").hide();
+    $("#" + id + " .datepicker-div").datepicker({
+        dateFormat:'yy-mm-dd',
+        changeMonth: true,
+        changeYear: true,
+        yearRange: "-100:+10",
+        altField: "#" + id + " input[type=date]"
+    });
+}
+
 $(function(){
-    $("#add-event").hide().before("<button id='add-event-button'>Add Event</button>").dialog({autoOpen: false, width: 400});
+    var ds = {
+        autoOpen: false,
+        width: 600,
+        modal: true,
+        position: ['center', 20]
+    };
+    $("#add-event").hide().before("<button id='add-event-button'>Add Event</button>").dialog(ds);
+    dp("add-event");
     $("input[type=submit], button").filter(".smaller").css("font-size", "60%%").end().button();
     $("#add-event-button").click(function(){
         $("#add-event").dialog('open');
     });
-    $(".delete").click(function(){
+    $("input.delete").click(function(){
         return confirm("Really delete this event?");
     });
-    $("tr:even").addClass("even");
-    $("tr:odd").addClass("odd");
+    $("body").append("<div id='edit-dialog' title='Edit Event'></div>");
+    $("#edit-dialog").dialog(ds);
+    $("input.edit").click(function(){
+        $("#edit-dialog").html("<h3>Loading...</h3>").dialog('open').load($(this).parent().attr('action') + " form", function(){
+            $("#edit-dialog a.cancel").hide();
+            $("#edit-dialog input[type=submit]").button();
+            dp("edit-dialog");
+        });
+        return false;
+    });
+    $("#all-events tr:even").addClass("even");
+    $("#all-events tr:odd").addClass("odd");
 });
