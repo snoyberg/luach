@@ -21,6 +21,7 @@ import Data.Time.Calendar.Hebrew
 import Data.List
 import Data.Function
 import Data.Time
+import Data.Text (Text, unpack)
 
 #if TEST
 import Test.Framework (testGroup, Test)
@@ -33,7 +34,7 @@ data CalendarType = Gregorian | Hebrew
 
 data Occurrence = Occurrence
     { calendarType :: CalendarType
-    , otitle :: String
+    , otitle :: Text
     , years :: Integer
     }
     deriving (Show, Eq)
@@ -64,13 +65,13 @@ occurrencesToJson =
 
 occurrenceToJson :: Occurrence -> Json
 occurrenceToJson o = jsonMap
-    [ ("title", jsonScalar $ otitle o)
+    [ ("title", jsonScalar $ unpack $ otitle o)
     , ("years", jsonScalar $ show $ years o)
     , ("calendar", jsonScalar $ show $ calendarType o)
     ]
 
 prettyOccurrence :: Occurrence -> String
-prettyOccurrence o = otitle o ++ " - " ++ show (years o) ++ " on the " ++
+prettyOccurrence o = unpack (otitle o) ++ " - " ++ show (years o) ++ " on the " ++
                        show (calendarType o) ++ " calendar"
 
 -- | Only does next 7 days.

@@ -28,7 +28,7 @@ tr.odd td
 #all-events th
     background-color: #eee
 h1
-    background: url(@StaticR.luach_small_png@) no-repeat
+    background: url(@{StaticR luach_small_png}) no-repeat
     padding-left: 34px
     line-height: 50px
     font-size: 50px

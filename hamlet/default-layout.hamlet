@@ -1,12 +1,13 @@
-!!!
-%html
-    %head
-        %title $pageTitle.pc$ - Luach
-        ^pageHead.pc^
-        %link!rel=icon!href=@StaticR.favicon_ico@
-    %body
-        #wrapper
-            $maybe mmsg msg
-                %span.ui-icon.ui-icon-info!style="float:left;margin-right:5px"
-                %p.ui-state-highlight $msg$
-            ^pageBody.pc^
+\<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>#{pageTitle pc} - Luach
+        \^{pageHead pc}
+        <link rel="icon" href="@{StaticR favicon_ico}">
+    <body>
+        <div id="wrapper">
+            $maybe msg <- mmsg
+                <span style="float:left;margin-right:5px" .ui-icon .ui-icon-info>
+                <p .ui-state-highlight>#{msg}
+            \^{pageBody pc}

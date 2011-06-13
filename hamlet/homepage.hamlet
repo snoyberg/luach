@@ -1,23 +1,24 @@
-!!!
-%html
-    %head
-        %title $pageTitle.pc$
-        %meta!name=description!content="Get birthday and anniversary reminders on the Hebrew and English calendars"
-        %link!rel=icon!href=@StaticR.favicon_ico@
-        ^pageHead.pc^
-    %body
-        #wrapper.ui-widget.ui-widget-content.ui-helper-clearfix
-            #info
-                %h1 Luach
-                %p Create alerts for birthdays and anniversaries on both the English and Hebrew calendars. It's easy to get started, no account setup required!
-                %p
-                    This free service is provided by $
-                    %a!href="http://www.yesodweb.com/" Yesod Web Development
+\<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>#{pageTitle pc}
+        <meta name="description" content="Get birthday and anniversary reminders on the Hebrew and English calendars">
+        <link rel="icon" href="@{StaticR favicon_ico}">
+        \^{pageHead pc}
+    <body>
+        <div id="wrapper" .ui-widget .ui-widget-content .ui-helper-clearfix>
+            <div id="info">
+                <h1>Luach
+                <p>Create alerts for birthdays and anniversaries on both the English and Hebrew calendars. It's easy to get started, no account setup required!
+                <p>
+                    \This free service is provided by 
+                    <a href="http://www.snoyman.com/">Michael Snoyman
                     \.
-                ^addthis^
-            #login
-                %h1 Login
-                %iframe!src="http://luach.rpxnow.com/openid/embed?token_url=@AuthR.RpxnowR@"!scrolling="no"!frameBorder="no"!allowtransparency="true"!style="width:400px;height:240px"
-        #footer
-            Powered by $
-            %a!href="http://docs.yesodweb.com/" Yesod Web Framework
+                \^{addthis}
+            <div id="login">
+                <h1>Login
+                <iframe src="http://luach.rpxnow.com/openid/embed?token_url=@{AuthR $ PluginR "rpxnow" mempty}" scrolling="no" frameBorder="no" allowtransparency="true" style="width:400px;height:240px">
+        <div id="footer">
+            \Powered by 
+            <a href="http://docs.yesodweb.com/">Yesod Web Framework

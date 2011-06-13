@@ -5,22 +5,24 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Model where
 
 import Yesod
 import Data.Time.Calendar
 import Data.Time
 import System.Locale
+import Data.Text (Text)
 
-mkPersist [$persist|
+mkPersist [persist|
 User
-    ident String
-    feedId String update
+    ident Text
+    feedId Text Update
     UniqueUser ident
     UniqueFeedId feedId
 Event
     user UserId Eq
-    title String Asc
+    title Text Asc
     day Day Asc
     gregorian Bool
     hebrew Bool

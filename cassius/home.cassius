@@ -1,123 +1,98 @@
 #login, #interface
-  display: none
-
+    display: none
 .tooltip
-  display: none
-  position: relative
-  background-color: #ffa
-  border: 1px solid #cc9
-  padding: 3px
-  font-size: 13px
-  -moz-box-shadow: 2px 2px 11px #666
-  -webkit-box-shadow: 2px 2px 11px #666
-  width: 300px
-
+    display: none
+    position: relative
+    background-color: #ffa
+    border: 1px solid #cc9
+    padding: 3px
+    font-size: 13px
+    -moz-box-shadow: 2px 2px 11px #666
+    -webkit-box-shadow: 2px 2px 11px #666
+    width: 300px
 body
-  background-color: #99c
-
+    background-color: #99c
 #wrapper
-  width: 760px
-  margin: 0.5em auto
-  background-color: #e4e4e4
-  border: 1px solid #fff
-  padding: 5px
-
+    width: 760px
+    margin: 0.5em auto
+    background-color: #e4e4e4
+    border: 1px solid #fff
+    padding: 5px
 #logout
-  margin-top: 0
-  text-align: center
-  font-size: 10pt
-  background-color: #dcdced
-
+    margin-top: 0
+    text-align: center
+    font-size: 10pt
+    background-color: #dcdced
 #information
-  float: left
-  width: 170px
-  font-size: 10pt
-  background-color: #cdcded
-  padding: 0 3px
-  border: 1px solid #999
-
+    float: left
+    width: 170px
+    font-size: 10pt
+    background-color: #cdcded
+    padding: 0 3px
+    border: 1px solid #999
 #information h2
-  font-size: 12pt
-  color: #606
-  text-align: center
-
+    font-size: 12pt
+    color: #606
+    text-align: center
 #upcoming
-  float: right
-  width: 170px
-  font-size: 10pt
-  background-color: #cdcded
-  padding: 0 3px
-  border: 1px solid #999
-
+    float: right
+    width: 170px
+    font-size: 10pt
+    background-color: #cdcded
+    padding: 0 3px
+    border: 1px solid #999
 #upcoming h2
-  font-size: 12pt
-  color: #4c0066
-  text-align: center
-
+    font-size: 12pt
+    color: #4c0066
+    text-align: center
 #upcoming h3
-  font-size: 11pt
-  text-align: center
-  color: #330066
-
+    font-size: 11pt
+    text-align: center
+    color: #330066
 #upcoming ul
-  padding-left: 17px
-
+    padding-left: 17px
 #events
-  margin: 0 180px
-
+    margin: 0 180px
 #events h2
-  text-align: center
-  margin-top: 0
-
+    text-align: center
+    margin-top: 0
 #events table
-  border-spacing: 0
-  border: 1px solid #ccc
-  margin: 0 5px
-  width: 390px
-
+    border-spacing: 0
+    border: 1px solid #ccc
+    margin: 0 5px
+    width: 390px
 #events tr.even
-  background-color: #eddce4
-
+    background-color: #eddce4
 #events tr.odd
-  background-color: #dcede4
-
+    background-color: #dcede4
 #events tr.even:hover
-  background-color: #ca98b0
-
+    background-color: #ca98b0
 #events tr.odd:hover
-  background-color: #98cab0
-
+    background-color: #98cab0
 #events .day
-  font-size: 10pt
-  text-align: right
-  padding-right: 5px
-
+    font-size: 10pt
+    text-align: right
+    padding-right: 5px
 .controls
-  text-align: center
-
+    text-align: center
 img
-  border: 0
-
+    border: 0
 #new-event
-  display: none
-
+    display: none
 #footer
-  padding-top: 10px
-  text-align: center
-  clear: both
-
+    padding-top: 10px
+    text-align: center
+    clear: both
 #subscribe
-  display: none
-  background-color: #e5e3e4
-  border: 1px solid black
-  padding: 10px
-  width: 400px
-  -moz-border-radius: 20px
-  -webkit-border-radius: 20px
-
+    display: none
+    background-color: #e5e3e4
+    border: 1px solid black
+    padding: 10px
+    width: 400px
+    -moz-border-radius: 20px
+    -webkit-border-radius: 20px
 #subscribelink
-  display: none
-
+    display: none
 #subscribe .close
     position: absolute
     top: -15px
@@ -126,21 +101,18 @@ img
     width: 35px
     height: 35px
     cursor: pointer
-
 #new-event
-  display: none
-  background-color: #e5e3e4
-  border: 1px solid black
-  padding: 10px
-  width: 400px
-  -moz-border-radius: 20px
-  -webkit-border-radius: 20px
-
+    display: none
+    background-color: #e5e3e4
+    border: 1px solid black
+    padding: 10px
+    width: 400px
+    -moz-border-radius: 20px
+    -webkit-border-radius: 20px
 #new-event h2
-  margin-top: 0
-  text-align: center
-  text-decoration: underline
-
+    margin-top: 0
+    text-align: center
+    text-decoration: underline
 #new-event .close
     position: absolute
     top: -15px
@@ -149,39 +121,31 @@ img
     width: 35px
     height: 35px
     cursor: pointer
-
 .ui-datepicker
     z-index: 9999
-
 #rpxnow
     text-align: center
-
 #rpxnow iframe
     width: 400px
     height: 200px
     background-color: #fff
     border: 1px solid black
     padding: 1em
-
 #banner .logo
     float: left
     width: 100px
     height: 100px
-
 #banner .beta
     width: 100px
     height: 100px
     float: right
-
 #banner h1, #banner h2
-  text-align: center
-  margin-top: 0
-  margin-bottom: 5px
-  color: #606
-  padding-left: -100px
-
+    text-align: center
+    margin-top: 0
+    margin-bottom: 5px
+    color: #606
+    padding-left: -100px
 h4
-  font-size: 8pt
-
+    font-size: 8pt
 h4 p
-  margin: 0
+    margin: 0

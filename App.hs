@@ -13,6 +13,7 @@ module App
 
 import Yesod
 import Yesod.Helpers.Auth
+import Yesod.Helpers.Auth.Rpxnow
 import Yesod.Helpers.Static
 import Yesod.Helpers.AtomFeed
 import Yesod.Form.Jquery
@@ -25,11 +26,13 @@ import StaticFiles
 import Control.Applicative
 import Control.Monad
 import Web.Encodings
-import Yesod.Mail
+import Network.Mail.Mime
 import System.Random
 import Data.Time
 import System.Locale
 import Data.Time.Calendar.Hebrew (toHebrew)
+import Data.Text (Text, pack, unpack)
+import Data.Monoid (mempty)
 
 data Luach = Luach
     { getStatic :: Static
@@ -37,7 +40,7 @@ data Luach = Luach
     }
 type Handler = GHandler Luach Luach
 
-mkYesod "Luach" [$parseRoutes|
+mkYesod "Luach" [parseRoutes|
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
@@ -48,11 +51,11 @@ mkYesod "Luach" [$parseRoutes|
 /event/#EventId EventR GET POST
 /event/#EventId/delete DeleteEventR POST
 /settings/feedid FeedIdR GET
-/feed/#String FeedR GET
-/day/#String DayR GET
+/feed/#Text FeedR GET
+/day/#Text DayR GET
 |]
 instance Yesod Luach where
-    approot _ = Settings.approot
+    approot _ = pack Settings.approot
     defaultLayout w = do
         y <- getYesod
         mmsg <- getMessage
@@ -61,29 +64,31 @@ instance Yesod Luach where
             addScriptEither $ urlJqueryJs y
             addScriptEither $ urlJqueryUiJs y
             addStylesheetEither $ urlJqueryUiCss y
-            addJavascript $(juliusFile "analytics")
-            addStyle $(cassiusFile "default-layout")
+            addJulius $(juliusFile "analytics")
+            addCassius $(cassiusFile "default-layout")
         hamletToRepHtml $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
 instance YesodAuth Luach where
-    type AuthEntity Luach = User
-    type AuthEmailEntity Luach = User -- ignored
+    type AuthId Luach = UserId
 
-    defaultDest _ = EventsR
+    loginDest _ = EventsR
+    logoutDest _ = RootR
 
-    getAuthId creds _extra = runDB $ do
+    getAuthId creds = runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
         case x of
             Just (uid, _) -> return $ Just uid
             Nothing -> do
                 stdgen <- liftIO newStdGen
-                let fid' = fst $ randomString 10 stdgen
+                let fid' = pack $ fst $ randomString 10 stdgen
                 fmap Just $ insert $ User (credsIdent creds) fid'
 
-    rpxnowSettings _ = Just $ RpxnowSettings "luach" "c8605aed1d6e38a58b180efd966bd7476b9a8e4c"
+    authPlugins = [authRpxnow "luach" "c8605aed1d6e38a58b180efd966bd7476b9a8e4c"]
 instance YesodPersist Luach where
     type YesodDB Luach = SqlPersist
-    runDB db = fmap connPool getYesod >>= Settings.runConnectionPool db
+    runDB db = liftIOHandler
+             $ fmap connPool getYesod >>= Settings.runConnectionPool db
+
 instance YesodJquery Luach where
     urlJqueryUiCss _ = Right "http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
 
@@ -103,7 +108,7 @@ getRootR = do
                 setTitle "Luach by Yesod Web Development"
                 addStylesheet $ StaticR homepage_css
                 addStylesheetEither $ urlJqueryUiCss y
-                addJavascript $(juliusFile "analytics")
+                addJulius $(juliusFile "analytics")
             hamletToRepHtml $(hamletFile "homepage")
         Just _ -> redirect RedirectTemporary EventsR
 
@@ -114,16 +119,16 @@ getEventsR = do
     os <- liftIO $ getOccurrencesIO $ map snd es
     render <- getUrlRender
     let json = jsonMap
-            [ ("events", jsonList $ map (eventToJson render) es)
+            [ ("events", jsonList $ map (eventToJson (unpack . render)) es)
             , ("upcoming", occurrencesToJson os)
             ]
     (_, wform, enctype) <- runFormGet $ eventFormlets uid Nothing
     let html = do
             setTitle "Events"
             form <- extractBody wform
-            addBody $(hamletFile "events")
-            addStyle $(cassiusFile "events")
-            addJavascript $(juliusFile "events")
+            addHamlet $(hamletFile "events")
+            addCassius $(cassiusFile "events")
+            addJulius $(juliusFile "events")
     defaultLayoutJson html json
   where
     notOne 1 = False
@@ -132,7 +137,7 @@ getEventsR = do
 postEventsR :: Handler RepHtml
 postEventsR = do
     uid <- requireAuthId
-    (res, wform, enctype) <- runFormPost $ eventFormlets uid Nothing
+    (res, wform, enctype) <- runFormPostNoNonce $ eventFormlets uid Nothing
     case res of
         FormSuccess e -> do
             _ <- runDB $ insert e
@@ -141,7 +146,7 @@ postEventsR = do
         _ -> defaultLayout $ do
             setTitle "Add Event"
             form <- extractBody wform
-            addBody $(hamletFile "post-events")
+            addHamlet $(hamletFile "post-events")
 
 eventFormlets :: UserId -> Formlet s Luach Event
 eventFormlets uid e = fieldsToTable $ Event
@@ -157,7 +162,7 @@ getEventR eid = do
     uid <- requireAuthId
     e <- runDB $ get404 eid
     unless (uid == eventUser e) notFound
-    (res, wform, enctype) <- runFormPost $ eventFormlets uid $ Just e
+    (res, wform, enctype) <- runFormPostNoNonce $ eventFormlets uid $ Just e
     case res of
         FormSuccess e' -> do
             runDB $ replace eid e'
@@ -168,7 +173,7 @@ getEventR eid = do
     defaultLayout $ do
         setTitle "Edit Event"
         form <- extractBody wform
-        addBody $(hamletFile "edit-event")
+        addHamlet $(hamletFile "edit-event")
 
 postEventR :: EventId -> Handler RepHtml
 postEventR = getEventR
@@ -189,42 +194,44 @@ getFeedIdR = do
     fid <- if forceReset
                 then do
                     stdgen <- liftIO newStdGen
-                    let fid' = fst $ randomString 10 stdgen
+                    let fid' = pack $ fst $ randomString 10 stdgen
                     runDB $ update uid [UserFeedId fid']
                     return fid'
                 else return $ userFeedId u
     render <- getUrlRender
     jsonToRepJson $ jsonMap
-        [ ("feedUrl", jsonScalar $ render $ FeedR fid)
+        [ ("feedUrl", jsonScalar $ unpack $ render $ FeedR fid)
         ]
 
-getFeedR :: String -> Handler RepAtom
+getFeedR :: Text -> Handler RepAtom
 getFeedR fid = do
     mu <- runDB $ getBy $ UniqueFeedId fid
     (uid, _) <- maybe notFound return mu
     es <- runDB $ selectList [EventUserEq uid] [] 0 0
     now <- liftIO getCurrentTime
     os <- liftIO $ getOccurrencesIO $ map snd es
-    atomFeed $ AtomFeed
-        { atomTitle = "Your Luach Reminders"
-        , atomLinkSelf = FeedR fid
-        , atomLinkHome = RootR
-        , atomUpdated = now
-        , atomEntries = map (helper now) os
+    atomFeed $ Feed
+        { feedTitle = "Your Luach Reminders"
+        , feedLinkSelf = FeedR fid
+        , feedLinkHome = RootR
+        , feedUpdated = now
+        , feedEntries = map (helper now) os
+        , feedDescription = "Your Luach Reminders"
+        , feedLanguage = "en"
         }
   where
-     helper now (d, os) = AtomFeedEntry
-        { atomEntryLink = DayR $ show d
-        , atomEntryUpdated = now
-        , atomEntryTitle = "Luach reminders for " ++ prettyDate d
-        , atomEntryContent = [$hamlet|
-%ul
-    $forall os o
-        %li $otitle.o$ is $show.years.o$ years on the $show.calendarType.o$ calendar
-|] id
+     helper now (d, os) = FeedEntry
+        { feedEntryLink = DayR $ pack $ show d
+        , feedEntryUpdated = now
+        , feedEntryTitle = pack $ "Luach reminders for " ++ prettyDate d
+        , feedEntryContent = [hamlet|\
+<ul>
+    $forall o <- os
+        <li>#{otitle o} is #{show (years o)} years on the #{show (calendarType o)} calendar
+|]
         }
 
-getDayR :: String -> Handler ()
+getDayR :: Text -> Handler ()
 getDayR _ = redirect RedirectTemporary EventsR
 
 withLuach :: (Application -> IO a) -> IO a
@@ -235,12 +242,12 @@ withLuach f = Settings.withConnectionPool $ \p -> do
     let h = Luach s p
     toWaiApp h >>= f
   where
-    s = fileLookupDir Settings.staticdir typeByExt
+    s = static Settings.staticdir
 
 eventToJson :: (LuachRoute -> String) -> (EventId, Event) -> Json
 eventToJson render (eid, e) = jsonMap
-    [ ("title", jsonScalar $ encodeHtml $ eventTitle e)
-    , ("rawtitle", jsonScalar $ eventTitle e)
+    [ ("title", jsonScalar $ encodeHtml $ unpack $ eventTitle e)
+    , ("rawtitle", jsonScalar $ unpack $ eventTitle e)
     , ("day", jsonScalar $ show $ eventDay e)
     , ("prettyday", jsonScalar $ prettyDate' $ eventDay e)
     , ("reminders", jsonList $
