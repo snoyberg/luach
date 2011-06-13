@@ -37,6 +37,7 @@ import Data.Monoid (mempty)
 data Luach = Luach
     { getStatic :: Static
     , connPool :: Settings.ConnectionPool
+    , theApproot :: Text
     }
 type Handler = GHandler Luach Luach
 
@@ -55,7 +56,7 @@ mkYesod "Luach" [parseRoutes|
 /day/#Text DayR GET
 |]
 instance Yesod Luach where
-    approot _ = pack Settings.approot
+    approot = theApproot
     defaultLayout w = do
         y <- getYesod
         mmsg <- getMessage
@@ -234,12 +235,12 @@ getFeedR fid = do
 getDayR :: Text -> Handler ()
 getDayR _ = redirect RedirectTemporary EventsR
 
-withLuach :: (Application -> IO a) -> IO a
-withLuach f = Settings.withConnectionPool $ \p -> do
+withLuach :: Text -> (Application -> IO a) -> IO a
+withLuach ar f = Settings.withConnectionPool $ \p -> do
     flip Settings.runConnectionPool p $ runMigration $ do
         migrate (undefined :: User)
         migrate (undefined :: Event)
-    let h = Luach s p
+    let h = Luach s p ar
     toWaiApp h >>= f
   where
     s = static Settings.staticdir

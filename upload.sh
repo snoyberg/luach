@@ -1,0 +1,1 @@
+cabal clean && cabal configure -fproduction && cabal build && rm -rf static/tmp && strip dist/build/luach/luach && bzip2 dist/build/luach/luach && scp -i ~/.ec2/ec2-keypair.pem -r static dist/build/luach/luach.bz2 ubuntu@50.16.170.145:/home/ubuntu/luach

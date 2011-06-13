@@ -3,8 +3,12 @@ Build-type:                 Simple
 Version:                    0.2.0
 Cabal-Version:              >= 1.2
 
-Executable simple-server
-  Main-is:                  simple-server.hs
+Flag production
+    Description:   Build the production executable.
+    Default:       False
+
+Executable luach
+  Main-is:                  luach.hs
   Build-depends:            base > 4 && < 5,
                             yesod >= 0.8 && < 0.9,
                             wai-extra,
@@ -33,4 +37,9 @@ Executable simple-server
                             text,
                             authenticate >= 0.9.1.2,
                             hamlet
-  ghc-options:              -O0 -Wall -Werror
+  if flag(production)
+        cpp-options:   -DPRODUCTION
+        ghc-options:   -Wall -threaded -O2
+  else
+        ghc-options:   -Wall -Werror -threaded -O0
+
