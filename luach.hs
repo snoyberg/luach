@@ -3,20 +3,13 @@
 #if PRODUCTION
 import App (withLuach)
 import Network.Wai.Handler.Warp (run)
-import System.Environment (getArgs)
+import System.Environment (getEnv)
 import Data.Text (pack)
 
 main :: IO ()
 main = do
-    args <- getArgs
-    let usage = "Usage: luach <port> <approot>"
-    (port, approot) <-
-        case args of
-            [x, y] ->
-                case reads x of
-                    (i, _):_ -> return (i, y)
-                    _ -> error usage
-            _ -> error usage
+    port <- fmap read $ getEnv "PORT"
+    approot <- getEnv "APPROOT"
     withLuach (pack approot) $ run port
 #else
 import App (withLuach)

@@ -5,7 +5,7 @@ Cabal-Version:              >= 1.2
 
 Flag production
     Description:   Build the production executable.
-    Default:       False
+    Default:       True
 
 Executable luach
   Main-is:                  luach.hs
