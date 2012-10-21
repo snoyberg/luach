@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Occurrence
     ( Occurrence (..)
     , Occurrences
@@ -54,20 +55,20 @@ instance ConvertSuccess Occurrences HtmlObject where
             ]
 -}
 
-occurrencesToJson :: Occurrences -> Json
+occurrencesToJson :: Occurrences -> Value
 occurrencesToJson =
-    jsonList . map go
+    array . map go
   where
-    go (d, o) = jsonMap
-        [ ("day", jsonScalar $ prettyDate d)
-        , ("o", jsonList $ map occurrenceToJson o)
+    go (d, o) = object
+        [ "day" .= prettyDate d
+        , "o" .= map occurrenceToJson o
         ]
 
-occurrenceToJson :: Occurrence -> Json
-occurrenceToJson o = jsonMap
-    [ ("title", jsonScalar $ unpack $ otitle o)
-    , ("years", jsonScalar $ show $ years o)
-    , ("calendar", jsonScalar $ show $ calendarType o)
+occurrenceToJson :: Occurrence -> Value
+occurrenceToJson o = object
+    [ "title" .= otitle o
+    , "years" .= show (years o)
+    , "calendar" .= show (calendarType o)
     ]
 
 prettyOccurrence :: Occurrence -> String

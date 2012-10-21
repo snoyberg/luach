@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Settings
     ( hamletFile
     , cassiusFile
@@ -18,8 +19,10 @@ import qualified Text.Cassius as H
 import qualified Text.Julius as H
 import Language.Haskell.TH.Syntax
 import Database.Persist.Postgresql
-import Yesod (MonadControlIO)
+import Yesod (MonadBaseControl)
 import Data.Text (Text)
+import Control.Monad.IO.Class (MonadIO)
+import Data.Text.Encoding (encodeUtf8)
 
 hamletFile :: FilePath -> Q Exp
 hamletFile x = H.hamletFile $ "hamlet/" ++ x ++ ".hamlet"
@@ -28,14 +31,14 @@ cassiusFile :: FilePath -> Q Exp
 #ifdef PRODUCTION
 cassiusFile x = H.cassiusFile $ "cassius/" ++ x ++ ".cassius"
 #else
-cassiusFile x = H.cassiusFileDebug $ "cassius/" ++ x ++ ".cassius"
+cassiusFile x = H.cassiusFileReload $ "cassius/" ++ x ++ ".cassius"
 #endif
 
 juliusFile :: FilePath -> Q Exp
 #ifdef PRODUCTION
 juliusFile x = H.juliusFile $ "julius/" ++ x ++ ".julius"
 #else
-juliusFile x = H.juliusFileDebug $ "julius/" ++ x ++ ".julius"
+juliusFile x = H.juliusFileReload $ "julius/" ++ x ++ ".julius"
 #endif
 
 connStr :: Text
@@ -48,10 +51,10 @@ connStr = "user=luach password=luach host=localhost port=5432 dbname=luach"
 connectionCount :: Int
 connectionCount = 10
 
-withConnectionPool :: MonadControlIO m => (ConnectionPool -> m a) -> m a
-withConnectionPool = withPostgresqlPool connStr connectionCount
+withConnectionPool :: (MonadIO m, MonadBaseControl IO m) => (ConnectionPool -> m a) -> m a
+withConnectionPool = withPostgresqlPool (encodeUtf8 connStr) connectionCount
 
-runConnectionPool :: MonadControlIO m => SqlPersist m a -> ConnectionPool -> m a
+runConnectionPool :: (MonadIO m, MonadBaseControl IO m) => SqlPersist m a -> ConnectionPool -> m a
 runConnectionPool = runSqlPool
 
 approot :: String

@@ -1,7 +1,7 @@
 <h2>Add Event
 <form method="post" enctype="#{enctype}">
     <table>
-        \^{form}
+        \^{wform}
         <tr>
             <td colspan="2">
                 <input type="submit" value="Add Event">

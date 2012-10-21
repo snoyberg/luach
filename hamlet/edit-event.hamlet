@@ -1,7 +1,7 @@
 <h2>Edit Event
 <form method="post" enctype="#{enctype}" action="@{EventR eid}">
     <table>
-        \^{form}
+        \^{wform}
         <tr>
             <td colspan="2">
                 <input type="submit" value="Update Event">

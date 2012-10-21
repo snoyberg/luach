@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -14,7 +17,7 @@ import Data.Time
 import System.Locale
 import Data.Text (Text)
 
-mkPersist [persist|
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persist|
 User
     ident Text
     feedId Text Update

@@ -30,7 +30,7 @@ $if not (null os)
 <div id="add-event" title="Add Event">
     <form method="post" enctype="#{enctype}">
         <table>
-            \^{form}
+            \^{wform}
             <tr>
                 <td colspan="2">
                     <input type="submit" value="Add Event">
@@ -52,25 +52,25 @@ $else
         <tbody>
             $forall e <- es
                 <tr>
-                    <td .title>#{eventTitle (snd e)}
+                    <td .title>#{eventTitle (entityVal e)}
                     <td>
-                        \#{showDay (eventDay (snd e))}
+                        \#{showDay (eventDay (entityVal e))}
                         <br>
-                        \#{showHDay (snd e)}
+                        \#{showHDay (entityVal e)}
                     <td>
-                        $if eventGregorian (snd e)
+                        $if eventGregorian (entityVal e)
                             <img src="@{StaticR checkmark_png}" alt="Yes">
                     <td>
-                        $if eventHebrew (snd e)
+                        $if eventHebrew (entityVal e)
                             <img src="@{StaticR checkmark_png}" alt="Yes">
                     <td>
-                        $if eventAfterSunset (snd e)
+                        $if eventAfterSunset (entityVal e)
                             <img src="@{StaticR checkmark_png}" alt="Yes">
                     <td>
-                        <form action="@{EventR (fst e)}">
+                        <form action="@{EventR (entityKey e)}">
                             <input type="submit" value="Edit" .smaller .edit>
                     <td>
-                        <form method="post" action="@{DeleteEventR (fst e)}">
+                        <form method="post" action="@{DeleteEventR (entityKey e)}">
                             <input type="submit" value="Delete" .smaller .delete>
 <div id="footer">
     \This free service is provided by 
