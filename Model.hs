@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Model where
 
 import Yesod
@@ -16,21 +17,20 @@ import Data.Time.Calendar
 import Data.Time
 import System.Locale
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text (Text, append)
+import qualified Data.Text as T
+import Data.Char (isUpper)
+import Database.Persist.Quasi
+import Data.Time (UTCTime)
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persist|
-User
-    ident Text
-    feedId Text Update
-    UniqueUser ident
-    UniqueFeedId feedId
-Event
-    user UserId Eq
-    title Text Asc
-    day Day Asc
-    gregorian Bool
-    hebrew Bool
-    afterSunset Bool
-|]
+share [mkPersist sqlSettings, mkMigrate "migrateAll"]
+    $(persistFileWith upperCaseSettings
+        { psToDBName = \t ->
+            if not (T.null t) && isUpper (T.head t)
+                then "Luach__" `append` psToDBName upperCaseSettings t
+                else psToDBName upperCaseSettings t
+        } "config/models")
 
 prettyDate' :: Day -> String
 prettyDate' = formatTime defaultTimeLocale "%b %e, %Y"

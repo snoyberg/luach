@@ -1,0 +1,12 @@
+User
+    ident Text
+    feedId Text Update
+    UniqueUser ident
+    UniqueFeedId feedId
+Event
+    user UserId Eq
+    title Text Asc
+    day Day Asc
+    gregorian Bool
+    hebrew Bool
+    afterSunset Bool

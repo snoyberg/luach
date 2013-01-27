@@ -19,6 +19,7 @@ Executable luach
                             old-locale,
                             predicates,
                             safe-failure,
+                            shakespeare-text,
                             random,
                             persistent,
                             persistent-postgresql,

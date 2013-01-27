@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Settings
     ( hamletFile
     , cassiusFile
@@ -23,6 +24,9 @@ import Yesod (MonadBaseControl)
 import Data.Text (Text)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text.Encoding (encodeUtf8)
+import Text.Shakespeare.Text (textFile)
+import Data.Text.Lazy.Builder (toLazyText)
+import Data.Text.Lazy (toStrict)
 
 hamletFile :: FilePath -> Q Exp
 hamletFile x = H.hamletFile $ "hamlet/" ++ x ++ ".hamlet"
@@ -42,11 +46,7 @@ juliusFile x = H.juliusFileReload $ "julius/" ++ x ++ ".julius"
 #endif
 
 connStr :: Text
-#ifdef PRODUCTION
-connStr = "user=luach password=luach host=localhost port=5432 dbname=luach"
-#else
-connStr = "user=luach password=luach host=localhost port=5432 dbname=luach"
-#endif
+connStr = toStrict $ toLazyText $ $(textFile "config/connstr.txt") undefined
 
 connectionCount :: Int
 connectionCount = 10
