@@ -23,6 +23,8 @@ import Data.List
 import Data.Function
 import Data.Time
 import Data.Text (Text, unpack)
+import Data.Aeson
+import qualified Data.Vector as V
 
 #if TEST
 import Test.Framework (testGroup, Test)
@@ -57,7 +59,7 @@ instance ConvertSuccess Occurrences HtmlObject where
 
 occurrencesToJson :: Occurrences -> Value
 occurrencesToJson =
-    array . map go
+    Array . V.fromList . map go
   where
     go (d, o) = object
         [ "day" .= prettyDate d

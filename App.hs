@@ -21,7 +21,7 @@ import Model
 import Occurrence
 import qualified Settings
 import Settings (hamletFile, juliusFile, cassiusFile)
-import Database.Persist.GenericSql
+import Database.Persist.Sql
 import StaticFiles
 import Control.Applicative
 import Control.Monad
@@ -34,7 +34,8 @@ import Data.Text (Text, pack, unpack)
 import Data.Monoid (mempty)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Hamlet (shamlet)
-import Network.HTTP.Conduit (Manager, newManager)
+import Network.HTTP.Conduit (Manager, newManager, conduitManagerSettings)
+import Control.Monad.Logger
 
 data Luach = Luach
     { getStatic :: Static
@@ -118,7 +119,7 @@ getRootR = do
             hamletToRepHtml $(hamletFile "homepage")
         Just _ -> redirect EventsR
 
-getEventsR :: Handler RepHtmlJson
+getEventsR :: Handler TypedContent
 getEventsR = do
     Entity uid user <- requireAuth
     es <- runDB $ selectList [EventUser ==. uid] [Asc EventDay, Asc EventTitle]
@@ -134,7 +135,7 @@ getEventsR = do
             $(whamletFile "hamlet/events.hamlet")
             toWidget $(cassiusFile "events")
             toWidget $(juliusFile "events")
-    defaultLayoutJson html json
+    defaultLayoutJson html (return json)
   where
     notOne 1 = False
     notOne _ = True
@@ -152,7 +153,7 @@ postEventsR = do
             setTitle "Add Event"
             $(whamletFile "hamlet/post-events.hamlet")
 
-eventFormlets :: UserId -> Maybe Event -> Html -> MForm Luach Luach (FormResult Event, Widget)
+eventFormlets :: UserId -> Maybe Event -> Html -> MForm Handler (FormResult Event, Widget)
 eventFormlets uid e = renderTable $ Event
     <$> pure uid
     <*> areq textField "Title" (eventTitle <$> e)
@@ -190,7 +191,7 @@ postDeleteEventR eid = do
     setMessage "The event has been deleted"
     redirect RootR
 
-getFeedIdR :: Handler RepJson
+getFeedIdR :: Handler Value
 getFeedIdR = do
     Entity uid u <- requireAuth
     forceReset <- runInputGet $ ireq boolField "forceReset"
@@ -240,9 +241,9 @@ getDayR _ = redirect EventsR
 
 withLuach :: Text -> (Application -> IO a) -> IO a
 withLuach ar f = Settings.withConnectionPool $ \p -> do
-    flip Settings.runConnectionPool p $ runMigration migrateAll
+    runStdoutLoggingT $ flip Settings.runConnectionPool p $ runMigration migrateAll
     s <- static Settings.staticdir
-    m <- newManager def
+    m <- newManager conduitManagerSettings
     let h = Luach s p ar m
     toWaiApp h >>= f
   where

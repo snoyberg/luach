@@ -23,6 +23,7 @@ import qualified Data.Text as T
 import Data.Char (isUpper)
 import Database.Persist.Quasi
 import Data.Time (UTCTime)
+import Data.Typeable (Typeable)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith upperCaseSettings

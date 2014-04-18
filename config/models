@@ -3,6 +3,7 @@ User
     feedId Text Update
     UniqueUser ident
     UniqueFeedId feedId
+    deriving Typeable
 Event
     user UserId Eq
     title Text Asc
