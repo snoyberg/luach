@@ -1,4 +1,5 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -28,7 +29,6 @@ import Control.Monad
 import Network.Mail.Mime
 import System.Random
 import Data.Time
-import System.Locale
 import Data.Time.Calendar.Hebrew (toHebrew)
 import Data.Text (Text, pack, unpack)
 import Data.Monoid (mempty)
@@ -93,8 +93,10 @@ instance YesodAuth Luach where
     authPlugins _ = [authRpxnow "luach" "c8605aed1d6e38a58b180efd966bd7476b9a8e4c"]
     authHttpManager = httpManager
 instance YesodPersist Luach where
-    type YesodPersistBackend Luach = SqlPersist
+    type YesodPersistBackend Luach = SqlBackend
     runDB db = fmap connPool getYesod >>= Settings.runConnectionPool db
+instance YesodAuthPersist Luach where
+    type AuthEntity Luach = User
 
 instance YesodJquery Luach where
     urlJqueryUiCss _ = Right "http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
@@ -240,13 +242,12 @@ getDayR :: Text -> Handler ()
 getDayR _ = redirect EventsR
 
 withLuach :: Text -> (Application -> IO a) -> IO a
-withLuach ar f = Settings.withConnectionPool $ \p -> do
-    runStdoutLoggingT $ flip Settings.runConnectionPool p $ runMigration migrateAll
-    s <- static Settings.staticdir
-    m <- newManager conduitManagerSettings
+withLuach ar f = runStdoutLoggingT $ Settings.withConnectionPool $ \p -> do
+    flip Settings.runConnectionPool p $ runMigration migrateAll
+    s <- liftIO $ static Settings.staticdir
+    m <- liftIO $ newManager conduitManagerSettings
     let h = Luach s p ar m
-    toWaiApp h >>= f
-  where
+    liftIO $ toWaiApp h >>= f
 
 eventToJson :: (LuachRoute -> String) -> Entity Event -> Value
 eventToJson render (Entity eid e) = object

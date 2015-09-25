@@ -6,7 +6,6 @@ module Settings
     ( hamletFile
     , cassiusFile
     , juliusFile
-    , connStr
     , ConnectionPool
     , withConnectionPool
     , runConnectionPool
@@ -22,11 +21,13 @@ import Language.Haskell.TH.Syntax
 import Database.Persist.Postgresql
 import Yesod (MonadBaseControl)
 import Data.Text (Text)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text.Encoding (encodeUtf8)
 import Text.Shakespeare.Text (textFile)
 import Data.Text.Lazy.Builder (toLazyText)
 import Data.Text.Lazy (toStrict)
+import qualified Data.ByteString as S
+import Control.Monad.Logger (MonadLogger)
 
 hamletFile :: FilePath -> Q Exp
 hamletFile x = H.hamletFile $ "hamlet/" ++ x ++ ".hamlet"
@@ -45,14 +46,13 @@ juliusFile x = H.juliusFile $ "julius/" ++ x ++ ".julius"
 juliusFile x = H.juliusFileReload $ "julius/" ++ x ++ ".julius"
 #endif
 
-connStr :: Text
-connStr = toStrict $ toLazyText $ $(textFile "config/connstr.txt") undefined
-
 connectionCount :: Int
 connectionCount = 10
 
-withConnectionPool :: (MonadIO m, MonadBaseControl IO m) => (ConnectionPool -> m a) -> m a
-withConnectionPool = withPostgresqlPool (encodeUtf8 connStr) connectionCount
+withConnectionPool :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => (ConnectionPool -> m a) -> m a
+withConnectionPool inner = do
+    connStr <- liftIO $ S.readFile "config/connstr.txt"
+    withPostgresqlPool connStr connectionCount inner
 
 runConnectionPool :: (MonadIO m, MonadBaseControl IO m) => SqlPersist m a -> ConnectionPool -> m a
 runConnectionPool = runSqlPool

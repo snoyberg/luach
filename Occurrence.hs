@@ -15,7 +15,7 @@ module Occurrence
 #endif
     ) where
 
-import Yesod.Json
+import Yesod
 import Model
 import Control.Applicative
 import Data.Time.Calendar.Hebrew

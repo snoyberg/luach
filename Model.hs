@@ -15,7 +15,6 @@ module Model where
 import Yesod
 import Data.Time.Calendar
 import Data.Time
-import System.Locale
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text (Text, append)
