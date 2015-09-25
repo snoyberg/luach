@@ -4,3 +4,4 @@ client_session_key.aes
 dist
 config/connstr.txt
 /.stack-work/
+kube/luach-connstr-secret.yaml

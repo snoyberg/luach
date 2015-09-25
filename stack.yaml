@@ -4,3 +4,5 @@ image:
   container:
     name: snoyberg/luach
     base: fpco/stack-run
+    add:
+        static: /app/static
