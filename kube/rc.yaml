@@ -38,4 +38,4 @@ spec:
           volumeMounts:
           - name: connstr-volume
             readOnly: true
-            mounPath: /app/config
+            mountPath: /app/config
