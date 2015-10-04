@@ -5,7 +5,7 @@ metadata:
     labels:
         name: luach
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     name: luach
   template:
@@ -20,6 +20,9 @@ spec:
         containers:
         - name: luach
           image: snoyberg/luach
+          resources:
+            limits:
+              memory: 800Mi
           imagePullPolicy: Always
           command: ["luach"]
           workingDir: /app
