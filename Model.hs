@@ -16,12 +16,10 @@ import Yesod
 import Data.Time.Calendar
 import Data.Time
 import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text (Text, append)
+import Data.Text (append)
 import qualified Data.Text as T
 import Data.Char (isUpper)
 import Database.Persist.Quasi
-import Data.Time (UTCTime)
 import Data.Typeable (Typeable)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"]

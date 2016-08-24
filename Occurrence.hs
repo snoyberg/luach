@@ -17,13 +17,11 @@ module Occurrence
 
 import Yesod
 import Model
-import Control.Applicative
 import Data.Time.Calendar.Hebrew
 import Data.List
 import Data.Function
 import Data.Time
 import Data.Text (Text, unpack)
-import Data.Aeson
 import qualified Data.Vector as V
 
 #if TEST
@@ -93,7 +91,7 @@ getOccurrences gtoday =
     . concatMap (nos gtoday $ toHebrew gtoday)
 
 hoist :: [(k, v)] -> (k, [v])
-hoist pairs@((k, _):_) = (k, map snd pairs)
+hoist pairs'@((k, _):_) = (k, map snd pairs')
 hoist [] = error "Empty list to hoist"
 
 -- | next occurences

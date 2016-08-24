@@ -20,12 +20,7 @@ import qualified Text.Julius as H
 import Language.Haskell.TH.Syntax
 import Database.Persist.Postgresql
 import Yesod (MonadBaseControl)
-import Data.Text (Text)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text.Encoding (encodeUtf8)
-import Text.Shakespeare.Text (textFile)
-import Data.Text.Lazy.Builder (toLazyText)
-import Data.Text.Lazy (toStrict)
 import qualified Data.ByteString as S
 import Control.Monad.Logger (MonadLogger)
 
@@ -54,7 +49,7 @@ withConnectionPool inner = do
     connStr <- liftIO $ S.readFile "config/connstr.txt"
     withPostgresqlPool connStr connectionCount inner
 
-runConnectionPool :: (MonadIO m, MonadBaseControl IO m) => SqlPersist m a -> ConnectionPool -> m a
+runConnectionPool :: (MonadIO m, MonadBaseControl IO m) => SqlPersistT m a -> ConnectionPool -> m a
 runConnectionPool = runSqlPool
 
 approot :: String

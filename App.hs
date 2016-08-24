@@ -10,6 +10,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module App
     ( withLuach
+    , resourcesLuach
     ) where
 
 import Yesod
@@ -24,17 +25,14 @@ import qualified Settings
 import Settings (hamletFile, juliusFile, cassiusFile)
 import Database.Persist.Sql
 import StaticFiles
-import Control.Applicative
 import Control.Monad
 import Network.Mail.Mime
 import System.Random
 import Data.Time
 import Data.Time.Calendar.Hebrew (toHebrew)
 import Data.Text (Text, pack, unpack)
-import Data.Monoid (mempty)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
-import Text.Hamlet (shamlet)
-import Network.HTTP.Conduit (Manager, newManager, conduitManagerSettings)
+import Network.HTTP.Conduit (Manager, newManager, tlsManagerSettings)
 import Control.Monad.Logger
 
 data Luach = Luach
@@ -73,7 +71,7 @@ instance Yesod Luach where
             addStylesheetEither $ urlJqueryUiCss y
             toWidget $(juliusFile "analytics")
             toWidget $(cassiusFile "default-layout")
-        hamletToRepHtml $(Settings.hamletFile "default-layout")
+        withUrlRenderer $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
 instance YesodAuth Luach where
     type AuthId Luach = UserId
@@ -107,7 +105,7 @@ getFaviconR = sendFile "image/x-icon" "static/favicon.ico"
 getRobotsR :: Handler RepPlain
 getRobotsR = return $ RepPlain $ toContent ("" :: String)
 
-getRootR :: Handler RepHtml
+getRootR :: Handler Html
 getRootR = do
     x' <- maybeAuthId
     case x' of
@@ -118,7 +116,7 @@ getRootR = do
                 addStylesheet $ StaticR homepage_css
                 addStylesheetEither $ urlJqueryUiCss y
                 toWidget $(juliusFile "analytics")
-            hamletToRepHtml $(hamletFile "homepage")
+            withUrlRenderer $(hamletFile "homepage")
         Just _ -> redirect EventsR
 
 getEventsR :: Handler TypedContent
@@ -142,7 +140,7 @@ getEventsR = do
     notOne 1 = False
     notOne _ = True
 
-postEventsR :: Handler RepHtml
+postEventsR :: Handler Html
 postEventsR = do
     uid <- requireAuthId
     ((res, wform), enctype) <- runFormPostNoToken $ eventFormlets uid Nothing
@@ -164,7 +162,7 @@ eventFormlets uid e = renderTable $ Event
     <*> areq checkBoxField "Hebrew" (eventHebrew <$> e)
     <*> areq checkBoxField "After sunset" (eventAfterSunset <$> e)
 
-getEventR :: EventId -> Handler RepHtml
+getEventR :: EventId -> Handler Html
 getEventR eid = do
     uid <- requireAuthId
     e <- runDB $ get404 eid
@@ -176,12 +174,11 @@ getEventR eid = do
             setMessage "Event updated"
             redirect EventsR
         _ -> return ()
-    y <- getYesod
     defaultLayout $ do
         setTitle "Edit Event"
         $(whamletFile "hamlet/edit-event.hamlet")
 
-postEventR :: EventId -> Handler RepHtml
+postEventR :: EventId -> Handler Html
 postEventR = getEventR
 
 postDeleteEventR :: EventId -> Handler ()
@@ -205,7 +202,7 @@ getFeedIdR = do
                     return fid'
                 else return $ userFeedId u
     render <- getUrlRender
-    jsonToRepJson $ object
+    returnJson $ object
         [ "feedUrl" .= (render $ FeedR fid)
         ]
 
@@ -225,10 +222,12 @@ getFeedR fid = do
         , feedEntries = map (helper now) os
         , feedDescription = "Your Luach Reminders"
         , feedLanguage = "en"
+        , feedLogo = Nothing
         }
   where
      helper now (d, os) = FeedEntry
         { feedEntryLink = DayR $ pack $ show d
+        , feedEntryEnclosure = Nothing
         , feedEntryUpdated = now
         , feedEntryTitle = pack $ "Luach reminders for " ++ prettyDate d
         , feedEntryContent = [shamlet|\
@@ -245,7 +244,7 @@ withLuach :: Text -> (Application -> IO a) -> IO a
 withLuach ar f = runStdoutLoggingT $ Settings.withConnectionPool $ \p -> do
     flip Settings.runConnectionPool p $ runMigration migrateAll
     s <- liftIO $ static Settings.staticdir
-    m <- liftIO $ newManager conduitManagerSettings
+    m <- liftIO $ newManager tlsManagerSettings
     let h = Luach s p ar m
     liftIO $ toWaiApp h >>= f
 

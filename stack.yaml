@@ -1,8 +1,8 @@
-resolver: lts-3.6
+resolver: lts-6.11
 
 image:
   container:
     name: snoyberg/luach
-    base: fpco/stack-run
+    base: fpco/stack-run:lts-6.0
     add:
         static: /app/static
