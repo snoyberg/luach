@@ -60,7 +60,7 @@ mkYesod "Luach" [parseRoutes|
 /day/#Text DayR GET
 |]
 instance Yesod Luach where
-    approot = ApprootMaster theApproot
+    approot = guessApproot
     defaultLayout w = do
         y <- getYesod
         mmsg <- getMessage
