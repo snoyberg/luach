@@ -73,6 +73,8 @@ instance Yesod Luach where
             toWidget $(cassiusFile "default-layout")
         withUrlRenderer $(Settings.hamletFile "default-layout")
     authRoute _ = Just RootR
+
+    makeSessionBackend _ = fmap Just $ defaultClientSessionBackend 120 "config/client-session-key.aes"
 instance YesodAuth Luach where
     type AuthId Luach = UserId
 
