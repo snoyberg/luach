@@ -9,8 +9,6 @@ module Settings
     , ConnectionPool
     , withConnectionPool
     , runConnectionPool
-    , approot
-    , staticroot
     , staticdir
     ) where
 
@@ -51,16 +49,6 @@ withConnectionPool inner = do
 
 runConnectionPool :: (MonadIO m, MonadBaseControl IO m) => SqlPersistT m a -> ConnectionPool -> m a
 runConnectionPool = runSqlPool
-
-approot :: String
-#ifdef PRODUCTION
-approot = "http://luach.snoyman.com"
-#else
-approot = "http://localhost:3000"
-#endif
-
-staticroot :: String
-staticroot = approot ++ "/static"
 
 staticdir :: FilePath
 staticdir = "static"

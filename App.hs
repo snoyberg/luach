@@ -98,7 +98,7 @@ instance YesodAuthPersist Luach where
     type AuthEntity Luach = User
 
 instance YesodJquery Luach where
-    urlJqueryUiCss _ = Right "http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
+    urlJqueryUiCss _ = Right "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/swanky-purse/jquery-ui.css"
 
 getFaviconR :: Handler ()
 getFaviconR = sendFile "image/x-icon" "static/favicon.ico"
