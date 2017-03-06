@@ -38,7 +38,6 @@ import Control.Monad.Logger
 data Luach = Luach
     { getStatic :: Static
     , connPool :: Settings.ConnectionPool
-    , theApproot :: Text
     , httpManager :: Manager
     }
 type LuachRoute = Route Luach
@@ -242,12 +241,12 @@ getFeedR fid = do
 getDayR :: Text -> Handler ()
 getDayR _ = redirect EventsR
 
-withLuach :: Text -> (Application -> IO a) -> IO a
-withLuach ar f = runStdoutLoggingT $ Settings.withConnectionPool $ \p -> do
+withLuach :: (Application -> IO a) -> IO a
+withLuach f = runStdoutLoggingT $ Settings.withConnectionPool $ \p -> do
     flip Settings.runConnectionPool p $ runMigration migrateAll
     s <- liftIO $ static Settings.staticdir
     m <- liftIO $ newManager tlsManagerSettings
-    let h = Luach s p ar m
+    let h = Luach s p m
     liftIO $ toWaiApp h >>= f
 
 eventToJson :: (LuachRoute -> String) -> Entity Event -> Value

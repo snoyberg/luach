@@ -41,3 +41,8 @@ Executable luach
   else
         ghc-options:   -Wall -Werror -threaded -O0
 
+  other-modules:         App
+                         Model
+                         Occurrence
+                         Settings
+                         StaticFiles
